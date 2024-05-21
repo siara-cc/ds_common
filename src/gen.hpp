@@ -210,18 +210,23 @@ class byte_str {
     }
     byte_str(uint8_t *_buf, int _limit, int _grow_bytes = 0) {
       buf = NULL;
+      is_buf_given = false;
       set_buf_max_len(_buf, _limit, _grow_bytes);
     }
     void set_buf_max_len(uint8_t *_buf, int _limit, int _grow_bytes = 0) {
       if (_buf == NULL) {
         if (buf != NULL)
           delete [] buf;
-        buf = new uint8_t[_limit];
       }
       len = 0;
-      buf = _buf;
+      if (_buf == NULL)
+        buf = new uint8_t[_limit];
+      else
+        buf = _buf;
       limit = _limit;
       grow_bytes = _grow_bytes;
+      if (_buf != NULL)
+        is_buf_given = true;
     }
     void expand(int addl_len = 1) {
       int grow_len = addl_len / grow_bytes + 1;
@@ -231,6 +236,17 @@ class byte_str {
       limit += grow_len;
       delete [] buf;
       is_buf_given = false;
+    }
+    void truncate(int new_len) {
+      // if (new_len < 0) {
+      //   printf("New len < 0 : %d, %d\n", new_len, len);
+      //   return;
+      // }
+      if (new_len > len && new_len >= limit) {
+        if (grow_bytes > 0)
+          expand(new_len - len);
+      } else
+        len = new_len;
     }
     void append(uint8_t b) {
       if (len >= limit) {
