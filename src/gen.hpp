@@ -192,6 +192,24 @@ static uint32_t read_uintx(const uint8_t *ptr, uint32_t mask) {
   uint32_t ret = *((uint32_t *) ptr);
   return ret & mask; // faster endian dependent
 }
+uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) {
+  last_line += last_line_len;
+  while (*last_line == '\r' || *last_line == '\n' || *last_line == '\0') {
+    last_line++;
+    remaining--;
+    if (remaining == 0)
+      return nullptr;
+  }
+  uint8_t *cr_pos = (uint8_t *) memchr(last_line, '\n', remaining);
+  if (cr_pos != nullptr) {
+    if (*(cr_pos - 1) == '\r')
+      cr_pos--;
+    *cr_pos = 0;
+    last_line_len = cr_pos - last_line;
+  } else
+    last_line_len = remaining;
+  return last_line;
+}
 
 class byte_str {
   int limit;
@@ -307,10 +325,9 @@ class byte_blocks {
         block_remaining -= val_len;
         return new_block;
       } else {
-        pos = blocks.size();
-        pos--;
-        uint8_t *ret = blocks[pos];
-        pos *= block_size;
+        uint8_t *ret = blocks[blocks.size() - 1];
+        pos = blocks.size() * block_size;
+        pos -= block_size;
         size_t block_pos = (block_size - block_remaining);
         pos += block_pos;
         block_remaining -= val_len;
@@ -342,6 +359,12 @@ class byte_blocks {
       block_remaining = 0;
       count = 0;
     }
+    size_t push_back(const uint8_t c) {
+      size_t pos;
+      uint8_t *buf = reserve(1, pos);
+      *buf = c;
+      return pos;
+    }
     size_t push_back(const void *val, int val_len) {
       size_t pos;
       uint8_t *buf = reserve(val_len, pos);
@@ -363,6 +386,17 @@ class byte_blocks {
     }
     size_t size() {
       return block_size * blocks.size() - block_remaining;
+    }
+    size_t entry_count() {
+      return count;
+    }
+    uint32_t append_uint32(uint32_t u32) {
+      uint8_t s32[4];
+      s32[0] = u32 & 0xFF;
+      s32[1] = ((u32 >> 8) & 0xFF);
+      s32[2] = ((u32 >> 16) & 0xFF);
+      s32[3] = (u32 >> 24);
+      return push_back(s32, 4);
     }
     uint32_t append_svint60(int64_t input) {
       size_t pos;
