@@ -4,3 +4,5 @@
 *.mdx
 test_ms
 test_mw
+*.bin*
+

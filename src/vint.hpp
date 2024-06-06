@@ -3,6 +3,59 @@
 
 namespace gen {
 
+static int8_t append_rvint32(byte_vec& vec, uint32_t u32) {
+  int8_t len = 0;
+  while (u32 > 31) {
+    vec.push_back(u32 & 0xFF);
+    u32 >>= 8;
+    len++;
+  }
+  vec.push_back((u32 << 3) | len);
+  return len + 1;
+}
+static uint32_t read_rvint32(const uint8_t *ptr) {
+  uint32_t ret = *ptr >> 3;
+  int len = *ptr-- & 0x07;
+  while (len--) {
+    ret <<= 7;
+    ret += *ptr--;
+  }
+  return ret;
+}
+static int8_t append_fvint32(byte_vec& vec, uint32_t u32) {
+  int8_t len = 0;
+  do {
+    uint8_t b = u32 & 0x7F;
+    u32 >>= 7;
+    if (u32 > 0)
+      b |= 0x80;
+    vec.push_back(b);
+    len++;
+  } while (u32 > 0);
+  return len;
+}
+static int8_t copy_fvint32(uint8_t *ptr, uint32_t u32) {
+  int8_t len = 0;
+  do {
+    uint8_t b = u32 & 0x7F;
+    u32 >>= 7;
+    if (u32 > 0)
+      b |= 0x80;
+    *ptr++ = b;
+    len++;
+  } while (u32 > 0);
+  return len;
+}
+static uint32_t read_fvint32(const uint8_t *ptr, int8_t& len) {
+  uint32_t ret = *ptr & 0x7F;
+  len = 1;
+  while (*ptr++ & 0x80) {
+    ret <<= 7;
+    ret += *ptr;
+    len++;
+  }
+  return ret;
+}
 static int8_t get_vlen_of_uint32(uint32_t vint) {
   return vint < (1 << 7) ? 1 : (vint < (1 << 14) ? 2 : (vint < (1 << 21) ? 3 :
           (vint < (1 << 28) ? 4 : 5)));
