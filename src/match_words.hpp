@@ -44,70 +44,16 @@ typedef std::unordered_map<uint32_t, std::vector<uint8_t> > wm_hash;
 class word_matcher {
   private:
     byte_blocks *bb;
-    wm_hash ht;
-    std::vector<uint8_t>* *hash_tbl;
   public:
     std::vector<word_combi> word_combis;
     std::vector<uint32_t> ref_id_vec;
     word_matcher(byte_blocks& _bb) : bb (&_bb) {
-      hash_tbl = new std::vector<uint8_t>*[1 << 24];
-      memset(hash_tbl, '\0', (1 << 24) * sizeof(void *));
-      ctr = 0;
     }
     void reset() {
       bb->reset();
-      ht.clear();
+      word_combis.clear();
     }
-    uint32_t calc_hash(const uint8_t *s, uint32_t len) {
-      uint32_t hash = 0;
-      for (int i = 0; i < len; i++) {
-        hash = hash * 31 + s[i];
-      }
-      return hash;
-    }
-    void update_word_to_bv(std::vector<uint8_t>& byte_vec, const uint8_t *word, uint32_t word_len) {
-      int8_t vlen;
-      for (int i = 0; i < byte_vec.size(); ) {
-        uint32_t len = gen::read_fvint32(byte_vec.data() + i, vlen);
-        i += vlen;
-        int cmp = gen::compare(word, word_len, byte_vec.data(), len);
-        i += len;
-        if (cmp == 0) {
-          uint32_t freq = gen::read_uint32(byte_vec.data() + i);
-          freq++;
-          gen::copy_uint32(freq, byte_vec.data() + i);
-          return;
-        }
-        i += 4;
-      }
-      vlen = gen::append_fvint32(byte_vec, word_len);
-      for (int i = 0; i < word_len; i++)
-        byte_vec.push_back(word[i]);
-      append_uint32(1, byte_vec);
-    }
-    int ctr;
     void add_word_combi(uint32_t combi_pos, uint32_t len, uint32_t ref_id) {
-      // uint32_t hash = calc_hash((*bb)[combi_pos], len);
-      // int arr_pos = hash & 0xFFFFFF;
-      // std::vector<uint8_t> *bv_ptr = hash_tbl[arr_pos];
-      // if (bv_ptr == nullptr) {
-      //   std::vector<uint8_t> *byte_vec = new std::vector<uint8_t>();
-      //   update_word_to_bv(*byte_vec, (*bb)[combi_pos], len);
-      //   hash_tbl[arr_pos] = byte_vec;
-      //   ctr++;
-      // } else {
-      //   update_word_to_bv(*bv_ptr, (*bb)[combi_pos], len);
-      // }
-
-      // wm_hash::iterator it = ht.find(hash);
-      // if (it != ht.end()) {
-      //   //update_word_to_bv(it->second, (*bb)[combi_pos], len);
-      // } else {
-      //   std::vector<uint8_t> byte_vec;
-      //   //update_word_to_bv(byte_vec, (*bb)[combi_pos], len);
-      //   ht.emplace(hash, byte_vec);
-      // }
-
       word_combis.push_back((word_combi) {combi_pos, len, 0, ref_id});
       //printf("[%.*s], %d\n", len, bv->data() + combi_pos, len);
     }
@@ -140,6 +86,10 @@ class word_matcher {
         if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
              || c == '\''  || c == '+' || c == '-' || c == '"' || c > 127) {
           if (last_word_len > 4 && is_prev_non_word) {
+            if (len - i < 5) {
+              last_word_len += (len - i);
+              break;
+            }
             add_word_combi(pos + i - last_word_len, last_word_len, ref_id);
             last_word_len = 0;
           }
@@ -200,7 +150,7 @@ class word_matcher {
       std::sort(word_combi_ptrs.begin(), word_combi_ptrs.end(), [this](const word_combi *lhs, const word_combi *rhs) -> bool {
         return gen::compare((*bb)[lhs->pos], lhs->limit, (*bb)[rhs->pos], rhs->limit) < 0;
       });
-      t = gen::print_time_taken(t, "Time taken to sort words: ");
+      // t = gen::print_time_taken(t, "Time taken to sort words: ");
       uint32_t freq_count = 0;
       if (word_combis_sz > 0) {
         word_combi *pwc;
@@ -219,7 +169,7 @@ class word_matcher {
         }
         wc->freq_id = word_freq_vec.size();
         word_freq_vec.push_back((combi_freq) {wc->pos, wc->limit, freq_count + 1});
-        t = gen::print_time_taken(t, "Time taken to make uniq: ");
+        // t = gen::print_time_taken(t, "Time taken to make uniq: ");
       }
     }
     void make_uniq_combis(dict_match_vec& dmv) {

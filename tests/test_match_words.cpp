@@ -54,6 +54,7 @@ void test_file1(const char *filename) {
   fclose(fp);
 
   clock_t t = clock();
+  clock_t tt = clock();
 
   gen::byte_blocks bb;
   word_matcher wm(bb);
@@ -68,8 +69,16 @@ void test_file1(const char *filename) {
     if ((line_no % 10000) == 0) {
       // std::cout << ".";
       // std::cout.flush();
+      // gen::combi_freq_vec word_freq_vec;
+      // gen::combis_vec *cv = wm.get_combis();
+      // wm.make_uniq_words(word_freq_vec);
+      // printf("Word count: %lu, Uniq: %lu\n", cv->size(), word_freq_vec.size());
+      // wm.reset();
     }
   } while (line != NULL);
+  // gen::combi_freq_vec word_freq_vec;
+  // wm.make_uniq_words(word_freq_vec);
+  // printf("Uniq word count: %lu\n", word_freq_vec.size());
   printf("Line count: %d\n", line_no);
   t = print_time_taken(t, "Time taken for adding words: ");
   // printf("Ctr: %d\n", wm.ctr);
@@ -92,6 +101,8 @@ void test_file1(const char *filename) {
   std::sort(word_freq_ptr_vec.begin(), word_freq_ptr_vec.end(), [](const combi_freq *lhs, const combi_freq *rhs) -> bool {
     return lhs->freq > rhs->freq;
   });
+  uint8_t key_buf[1000];
+  madras_dv1::builder bldr("words.mdx", "kv_table,Key", 1, "t", "u");
   fp = fopen("wm_freq.txt", "wb+");
   FILE *fps = fopen("wm_freq_texts.txt", "wb+");
   uint32_t ptr = 0;
@@ -108,7 +119,12 @@ void test_file1(const char *filename) {
     //   fprintf(fp, "%u\t%u\t[%.*s]\n", cf->len, cf->freq, cf->len, (*bb)[cf->pos]);
     fprintf(fps, "%c%.*s\n", '0' + cf->byts, cf->len, bb[cf->pos]);
     fprintf(fp, "%u\t%u\t%.*s\n", cf->freq, cf->len, cf->len, bb[cf->pos]);
+    snprintf((char *) key_buf, 1000, "%c%.*s\n", '0' + cf->byts, cf->len, bb[cf->pos]);
+    bldr.insert(key_buf, cf->len + 1);
   }
+  bldr.build();
+  bldr.write_trie();
+  bldr.close_file();
   fclose(fp);
   fclose(fps);
   std::vector<uint32_t> *grps = fg.get_freq_grps();
@@ -123,7 +139,6 @@ void test_file1(const char *filename) {
   printf("Total ptr size: %u\n", tot_byts);
 
   fp = fopen("wm_ptrs.bin", "wb+");
-  madras_dv1::builder bldr("ptr_trie.mdx", "kv_table,Key", 1, "*", "u");
   std::vector<uint8_t> ptr_vec;
   int line_word_count = 0;
   int total_ptr_size = 0;
@@ -131,7 +146,6 @@ void test_file1(const char *filename) {
   for (int i = 0; i < total_words; i++) {
     word_combi *wc = &(*words)[i];
     if (prev_line_no != wc->ref_id) {
-      bool is_insert = bldr.insert(ptr_vec.data(), ptr_vec.size());
       // printf("\n%lu\t%d\t%d\n\n", ptr_vec.size(), line_word_count, is_insert);
       fwrite(ptr_vec.data(), ptr_vec.size(), 1, fp);
       ptr_vec.clear();
@@ -143,12 +157,10 @@ void test_file1(const char *filename) {
     // printf("{%u, %u} ", wc->freq_id, cf->ptr);
     total_ptr_size += append_vint32_test(ptr_vec, cf->ptr, cf->byts, line_word_count == 1);
   }
-      fwrite(ptr_vec.data(), ptr_vec.size(), 1, fp);
-      fclose(fp);
-      bool is_insert = bldr.insert(ptr_vec.data(), ptr_vec.size());
-  bldr.build();
-  bldr.write_trie();
+  fwrite(ptr_vec.data(), ptr_vec.size(), 1, fp);
+  fclose(fp);
   printf("Total_ptr_size: %d\n", total_ptr_size);
+  print_time_taken(tt, "Total Time taken: ");
 
   free(src_buf);
 
