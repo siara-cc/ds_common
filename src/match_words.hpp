@@ -11,6 +11,9 @@
 
 namespace gen {
 
+const size_t freq_grp_caps[] = {128, 128 + 16384, 128 + 16384 + 2097152, 128 + 16384 + 2097152 + 268435456,
+                                128 + 16384 + 2097152 + 268435456 + 34359738368};
+
 typedef struct {
   uint32_t pos;
   uint32_t limit;
@@ -33,7 +36,7 @@ typedef struct {
   uint32_t pos;
   uint32_t len;
   uint32_t freq;
-  uint8_t byts;
+  uint8_t grp;
   uint32_t ptr;
 } combi_freq;
 typedef std::vector<combi_freq> combi_freq_vec;
@@ -44,14 +47,39 @@ typedef std::unordered_map<uint32_t, std::vector<uint8_t> > wm_hash;
 class word_matcher {
   private:
     byte_blocks *bb;
+    byte_blocks words;
+    std::vector<uint32_t> word_positions;
+    std::vector<uint32_t> words_sorted;
   public:
+    int grp_count;
     std::vector<word_combi> word_combis;
     std::vector<uint32_t> ref_id_vec;
     word_matcher(byte_blocks& _bb) : bb (&_bb) {
+      grp_count = 0;
     }
     void reset() {
+      grp_count = 0;
       bb->reset();
       word_combis.clear();
+      word_positions.clear();
+      words_sorted.clear();
+      words.reset();
+    }
+    void add_word_combi(const uint8_t *word, uint32_t len, uint32_t ref_id) {
+      uint8_t buf[len + 1 + 4 + 10];
+      int buf_len = 5;
+      int8_t vlen = gen::copy_fvint32(buf + buf_len, len);
+      buf_len += vlen;
+      memcpy(buf + buf_len, word, len);
+      buf_len += len;
+      vlen = copy_fvint32(buf + buf_len, ref_id);
+      size_t word_pos = words.push_back(buf, buf_len);
+      word_positions.push_back(word_pos);
+    }
+    void set_last_word() {
+      uint32_t word_pos = word_positions[word_positions.size() - 1];
+      uint8_t *flag = words[word_pos + 4];
+      *flag = '\1';
     }
     void add_word_combi(uint32_t combi_pos, uint32_t len, uint32_t ref_id) {
       word_combis.push_back((word_combi) {combi_pos, len, 0, ref_id});
@@ -102,6 +130,38 @@ class word_matcher {
       if (last_word_len > 0)
         add_word_combi(pos + len - last_word_len, last_word_len, ref_id);
     }
+    uint32_t add_words(const uint8_t *words, int len, uint32_t ref_id) {
+      int last_word_len = 0;
+      bool is_prev_non_word = false;
+      uint32_t ret = word_positions.size();
+      for (uint32_t i = 0; i < len; i++) {
+        uint8_t c = words[i];
+        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c > 127) {
+          if (last_word_len > 4 && is_prev_non_word) {
+            if (len - i < 5) {
+              last_word_len += (len - i);
+              break;
+            }
+            add_word_combi(words + i - last_word_len, last_word_len, ref_id);
+            last_word_len = 0;
+          }
+          is_prev_non_word = false;
+        } else {
+          is_prev_non_word = true;
+        }
+        last_word_len++;
+      }
+      if (last_word_len > 0)
+        add_word_combi(words + len - last_word_len, last_word_len, ref_id);
+      set_last_word();
+      return ret;
+    }
+    byte_blocks *get_words() {
+      return &words;
+    }
+    std::vector<uint32_t> *get_word_positions() {
+      return &word_positions;
+    }
     std::vector<word_combi> *get_combis() {
       return &word_combis;
     }
@@ -139,38 +199,70 @@ class word_matcher {
       });
       t = gen::print_time_taken(t, "Time taken to assign and sort ref ids: ");
     }
-    void make_uniq_words(combi_freq_vec& word_freq_vec) {
+    void make_uniq_words(combi_freq_vec& word_freq_vec, combi_freq_ptr_vec& word_freq_ptr_vec) {
       clock_t t = clock();
-      size_t word_combis_sz = word_combis.size();
-      std::vector<word_combi *> word_combi_ptrs;
-      for (int i = 0; i < word_combis_sz; i++) {
-        word_combi *wc = &word_combis[i];
-        word_combi_ptrs.push_back(wc);
-      }
-      std::sort(word_combi_ptrs.begin(), word_combi_ptrs.end(), [this](const word_combi *lhs, const word_combi *rhs) -> bool {
-        return gen::compare((*bb)[lhs->pos], lhs->limit, (*bb)[rhs->pos], rhs->limit) < 0;
+      size_t word_combis_sz = word_positions.size();
+      printf("No. of words: %lu\n", word_combis_sz);
+      words_sorted = word_positions;
+      std::sort(words_sorted.begin(), words_sorted.end(), [this](const uint32_t& l, const uint32_t& r) -> bool {
+        int8_t vlen;
+        uint8_t *lhs = words[l] + 5;
+        uint32_t lhs_len = gen::read_fvint32(lhs, vlen);
+        lhs += vlen;
+        uint8_t *rhs = words[r] + 5;
+        uint32_t rhs_len = gen::read_fvint32(rhs, vlen);
+        rhs += vlen;
+        return gen::compare(lhs, lhs_len, rhs, rhs_len) < 0;
       });
-      // t = gen::print_time_taken(t, "Time taken to sort words: ");
+      gen::print_time_taken(t, "Time taken to sort words: ");
       uint32_t freq_count = 0;
       if (word_combis_sz > 0) {
-        word_combi *pwc;
-        word_combi *wc;
+        uint32_t pwpos;
+        uint32_t wpos;
+        uint8_t *w = nullptr;
+        uint32_t w_len;
+        int8_t vlen;
         for (int i = 1; i < word_combis_sz; i++) {
-          wc = word_combi_ptrs[i];
-          pwc = word_combi_ptrs[i - 1];
-          pwc->freq_id = word_freq_vec.size();
-          int cmp = gen::compare((*bb)[wc->pos], wc->limit, (*bb)[pwc->pos], pwc->limit);
+          wpos = words_sorted[i];
+          pwpos = words_sorted[i - 1];
+          w = words[wpos] + 5;
+          w_len = gen::read_fvint32(w, vlen);
+          w += vlen;
+          uint8_t *pw = words[pwpos];
+          gen::copy_uint32(word_freq_vec.size(), pw);
+          pw += 5;
+          int8_t pvlen;
+          uint32_t pw_len = gen::read_fvint32(pw, pvlen);
+          pw += pvlen;
+          int cmp = gen::compare(w, w_len, pw, pw_len);
           if (cmp != 0) {
-            word_freq_vec.push_back((combi_freq) {pwc->pos, pwc->limit, freq_count + 1});
+            word_freq_vec.push_back((combi_freq) {pwpos + 5 + pvlen, pw_len, freq_count + 1});
             freq_count = 0;
           } else {
             freq_count++;
           }
         }
-        wc->freq_id = word_freq_vec.size();
-        word_freq_vec.push_back((combi_freq) {wc->pos, wc->limit, freq_count + 1});
-        // t = gen::print_time_taken(t, "Time taken to make uniq: ");
+        if (w != nullptr)
+          gen::copy_uint32(word_freq_vec.size(), w - 5 - vlen);
+        word_freq_vec.push_back((combi_freq) {wpos + 5 + vlen, w_len, freq_count + 1});
+        for (int i = 0; i < word_freq_vec.size(); i++) {
+          combi_freq *cf = &word_freq_vec[i];
+          word_freq_ptr_vec.push_back(cf);
+        }
+        std::sort(word_freq_ptr_vec.begin(), word_freq_ptr_vec.end(), [](const combi_freq *lhs, const combi_freq *rhs) -> bool {
+          return lhs->freq > rhs->freq;
+        });
+        int cur_grp = 0;
+        for (int i = 0; i < word_freq_ptr_vec.size(); i++) {
+          combi_freq *cf = word_freq_ptr_vec[i];
+          if (i == freq_grp_caps[cur_grp])
+            cur_grp++;
+          // printf("%d, %u, [%.*s]\n", cur_grp, cf->len, cf->len, words[cf->pos]);
+          cf->grp = cur_grp;
+        }
+        grp_count = cur_grp + 1;
       }
+      t = gen::print_time_taken(t, "Time taken to make uniq: ");
     }
     void make_uniq_combis(dict_match_vec& dmv) {
       clock_t t = clock();

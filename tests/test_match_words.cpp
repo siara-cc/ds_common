@@ -63,7 +63,7 @@ void test_file1(const char *filename) {
   uint8_t *line = gen::extract_line(src_buf, line_len, file_len);
   do {
     uint32_t line_pos = bb.push_back(line, line_len);
-    wm.add_words(line_pos, line_len, line_no++);
+    wm.add_words(line, line_len, line_no++);
     //printf("%.*s\n", line_len, line);
     line = gen::extract_line(line, line_len, file_len - (line - src_buf) - line_len);
     if ((line_no % 10000) == 0) {
@@ -85,82 +85,15 @@ void test_file1(const char *filename) {
   // free(src_buf);
   // return;
 
-  gen::combis_vec *words = wm.get_combis();
-  uint32_t total_words = words->size();
-  printf("Total words: %u\n", total_words);
+  std::vector<uint32_t> *word_positions = wm.get_word_positions();
+  size_t total_words = word_positions->size();
 
   gen::freq_grp fg(total_words);
 
   gen::combi_freq_vec word_freq_vec;
-  wm.make_uniq_words(word_freq_vec);
   gen::combi_freq_ptr_vec word_freq_ptr_vec;
-  for (int i = 0; i < word_freq_vec.size(); i++) {
-    combi_freq *cf = &word_freq_vec[i];
-    word_freq_ptr_vec.push_back(cf);
-  }
-  std::sort(word_freq_ptr_vec.begin(), word_freq_ptr_vec.end(), [](const combi_freq *lhs, const combi_freq *rhs) -> bool {
-    return lhs->freq > rhs->freq;
-  });
-  uint8_t key_buf[1000];
-  madras_dv1::builder bldr("words.mdx", "kv_table,Key", 1, "t", "u");
-  fp = fopen("wm_freq.txt", "wb+");
-  FILE *fps = fopen("wm_freq_texts.txt", "wb+");
-  uint32_t ptr = 0;
-  uint8_t prev_byts = 0;
-  for (int i = 0; i < word_freq_ptr_vec.size(); i++) {
-    combi_freq *cf = word_freq_ptr_vec[i];
-    cf->byts = fg.add_freq(cf->freq, cf->len + 1);
-    if (prev_byts != cf->byts) {
-      prev_byts = cf->byts;
-      ptr = 0;
-    }
-    cf->ptr = ptr++;
-    // if (cf->freq > 1)
-    //   fprintf(fp, "%u\t%u\t[%.*s]\n", cf->len, cf->freq, cf->len, (*bb)[cf->pos]);
-    fprintf(fps, "%c%.*s\n", '0' + cf->byts, cf->len, bb[cf->pos]);
-    fprintf(fp, "%u\t%u\t%.*s\n", cf->freq, cf->len, cf->len, bb[cf->pos]);
-    snprintf((char *) key_buf, 1000, "%c%.*s\n", '0' + cf->byts, cf->len, bb[cf->pos]);
-    bldr.insert(key_buf, cf->len + 1);
-  }
-  bldr.build();
-  bldr.write_trie();
-  bldr.close_file();
-  fclose(fp);
-  fclose(fps);
-  std::vector<uint32_t> *grps = fg.get_freq_grps();
-  std::vector<uint32_t> *counts = fg.get_freq_counts();
-  std::vector<uint32_t> *sizes = fg.get_freq_sizes();
-  uint32_t tot_byts = 0;
-  for (int i = 0; i < grps->size(); i++) {
-    uint32_t byts = (*grps)[i] * (i + 1);
-    tot_byts += byts;
-    printf("%d\t%u\t%u\t%u\t%u\n", i + 1, (*grps)[i], (*counts)[i], (*sizes)[i], byts);
-  }
-  printf("Total ptr size: %u\n", tot_byts);
-
-  fp = fopen("wm_ptrs.bin", "wb+");
-  std::vector<uint8_t> ptr_vec;
-  int line_word_count = 0;
-  int total_ptr_size = 0;
-  uint32_t prev_line_no = (*words)[0].ref_id;
-  for (int i = 0; i < total_words; i++) {
-    word_combi *wc = &(*words)[i];
-    if (prev_line_no != wc->ref_id) {
-      // printf("\n%lu\t%d\t%d\n\n", ptr_vec.size(), line_word_count, is_insert);
-      fwrite(ptr_vec.data(), ptr_vec.size(), 1, fp);
-      ptr_vec.clear();
-      prev_line_no = wc->ref_id;
-      line_word_count = 0;
-    }
-    line_word_count++;
-    combi_freq *cf = &word_freq_vec[wc->freq_id];
-    // printf("{%u, %u} ", wc->freq_id, cf->ptr);
-    total_ptr_size += append_vint32_test(ptr_vec, cf->ptr, cf->byts, line_word_count == 1);
-  }
-  fwrite(ptr_vec.data(), ptr_vec.size(), 1, fp);
-  fclose(fp);
-  printf("Total_ptr_size: %d\n", total_ptr_size);
-  print_time_taken(tt, "Total Time taken: ");
+  wm.make_uniq_words(word_freq_vec, word_freq_ptr_vec);
+  printf("No. of uniq words: %lu\n", word_freq_vec.size());
 
   free(src_buf);
 

@@ -70,6 +70,48 @@ static clock_t print_time_taken(clock_t t, const char *msg) {
   gen_printf("%s%.5f\n", msg, time_taken);
   return clock();
 }
+static int compare(const uint8_t *v1, const uint8_t *v2) {
+  int k = 0;
+  uint8_t c1, c2;
+  do {
+    c1 = v1[k];
+    c2 = v2[k];
+    if (c1 == 0 && c2 == 0)
+      return 0;
+    k++;
+  } while (c1 == c2);
+  return (c1 < c2 ? -k : k);
+}
+static int compare(const uint8_t *v1, int len1, const uint8_t *v2) {
+  if (len1 == 0 && v2[0] == 0)
+    return 0;
+  int k = 0;
+  uint8_t c1, c2;
+  c1 = c2 = 0;
+  while (k < len1 && c1 == c2) {
+    c1 = v1[k];
+    c2 = v2[k];
+    k++;
+    if (k == len1 && c2 == 0)
+      return 0;
+  }
+  return (c1 < c2 ? -k : k);
+}
+static int compare(const uint8_t *v1, const uint8_t *v2, int len2) {
+  if (len2 == 0 && v1[0] == 0)
+    return 0;
+  int k = 0;
+  uint8_t c1, c2;
+  c1 = c2 = 0;
+  while (k < len2 && c1 == c2) {
+    c1 = v1[k];
+    c2 = v2[k];
+    k++;
+    if (k == len2 && c1 == 0)
+      return 0;
+  }
+  return (c1 < c2 ? -k : k);
+}
 static int compare(const uint8_t *v1, int len1, const uint8_t *v2, int len2) {
     int lim = (len2 < len1 ? len2 : len1);
     int k = 0;
@@ -122,6 +164,18 @@ static void copy_vint32(uint32_t input, uint8_t *out, int8_t vlen) {
   for (int i = vlen - 1; i > 0; i--)
     *out++ = 0x80 + ((input >> (7 * i)) & 0x7F);
   *out = input & 0x7F;
+}
+static uint32_t read_vint32(const uint8_t *ptr, int8_t *vlen = NULL) {
+  uint32_t ret = 0;
+  int8_t len = 5; // read max 5 bytes
+  do {
+    ret <<= 7;
+    ret += *ptr & 0x7F;
+    len--;
+  } while ((*ptr++ >> 7) && len);
+  if (vlen != NULL)
+    *vlen = 5 - len;
+  return ret;
 }
 static void write_uint16(uint32_t input, FILE *fp) {
   fputc(input & 0xFF, fp);

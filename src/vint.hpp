@@ -50,8 +50,8 @@ static uint32_t read_fvint32(const uint8_t *ptr, int8_t& len) {
   uint32_t ret = *ptr & 0x7F;
   len = 1;
   while (*ptr++ & 0x80) {
-    ret <<= 7;
-    ret += *ptr;
+    uint32_t bval = *ptr;
+    ret += (bval << (7 * len));
     len++;
   }
   return ret;
@@ -67,17 +67,11 @@ static int append_vint32(byte_vec& vec, uint32_t vint) {
   vec.push_back(vint & 0x7F);
   return len;
 }
-static uint32_t read_vint32(const uint8_t *ptr, int8_t *vlen = NULL) {
-  uint32_t ret = 0;
-  int8_t len = 5; // read max 5 bytes
-  do {
-    ret <<= 7;
-    ret += *ptr & 0x7F;
-    len--;
-  } while ((*ptr++ >> 7) && len);
-  if (vlen != NULL)
-    *vlen = 5 - len;
-  return ret;
+static int append_vint32(byte_vec& vec, uint32_t vint, int len) {
+  for (int i = len - 1; i > 0; i--)
+    vec.push_back(0x80 + ((vint >> (7 * i)) & 0x7F));
+  vec.push_back(vint & 0x7F);
+  return len;
 }
 static int8_t get_v2len_of_uint32(uint32_t vint) {
   return vint < (1 << 6) ? 1 : (vint < (1 << 14) ? 2 : (vint < (1 << 22) ? 3 : 4));
@@ -172,6 +166,23 @@ static int append_v2uint32(byte_vec& vec, uint32_t vint) {
       }
       return ret;
     }
+    // void copy_tvint(uint32_t val, uint8_t *ptr) {
+    //   if (val < 15) {
+    //     *ptr++ = val;
+    //     return;
+    //   }
+    //   val -= 15;
+    //   uint32_t var_len = (val < 16 ? 2 : (val < 2048 ? 3 : (val < 262144 ? 4 : 5)));
+    //   if (vec != NULL) {
+    //     *vec++ = 15;
+    //     int bit7s = var_len - 2;
+    //     for (int i = bit7s - 1; i >= 0; i--)
+    //       *vec++ = (0x80 + ((val >> (i * 7 + 4)) & 0x7F));
+    //     *vec++ = (0x10 + (val & 0x0F));
+    //   }
+    // }
+    // uint32_t read_tvint(uint8_t *ptr) {
+    // }
 
 }
 
