@@ -66,7 +66,9 @@ class word_matcher {
       words.reset();
     }
     void add_word_combi(const uint8_t *word, uint32_t len, uint32_t ref_id) {
-      uint8_t buf[len + 1 + 4 + 10];
+      int buf_size = len + 1 + 4 + 10;
+      uint8_t buf[buf_size];
+      memset(buf, '\0', buf_size);
       int buf_len = 5;
       int8_t vlen = gen::copy_fvint32(buf + buf_len, len);
       buf_len += vlen;

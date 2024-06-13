@@ -50,7 +50,7 @@ static uint32_t read_fvint32(const uint8_t *ptr, int8_t& len) {
   uint32_t ret = *ptr & 0x7F;
   len = 1;
   while (*ptr++ & 0x80) {
-    uint32_t bval = *ptr;
+    uint32_t bval = *ptr & 0x7F;
     ret += (bval << (7 * len));
     len++;
   }
@@ -73,23 +73,37 @@ static int append_vint32(byte_vec& vec, uint32_t vint, int len) {
   vec.push_back(vint & 0x7F);
   return len;
 }
-static int8_t get_v2len_of_uint32(uint32_t vint) {
-  return vint < (1 << 6) ? 1 : (vint < (1 << 14) ? 2 : (vint < (1 << 22) ? 3 : 4));
-}
-static int append_v2uint32(byte_vec& vec, uint32_t vint) {
-  int len = get_v2len_of_uint32(vint);
-  if (len == 1) {
-    vec.push_back(vint);
-    return 1;
-  }
-  len--;
-  vec.push_back((len << 6) + vint & 0x1F);
-  vint >>= 6;
-  while (len--) {
-    vec.push_back(vint & 0xFF);
-    vint >>= 8;
-  }
+static int append_ovint32(byte_vec& vec, uint32_t vint, int offset_bits, uint8_t or_mask) {
+  int mask_bits = 7 - offset_bits;
+  uint8_t mask = (1 << mask_bits) - 1;
+  int len = 0;
+  uint8_t b = or_mask;
+  do {
+    b |= (vint & mask);
+    vint >>= mask_bits;
+    if (vint > 0)
+      b |= (mask + 1);
+    vec.push_back(b);
+    b = 0;
+    mask = '\x7F';
+    mask_bits = 7;
+    len++;
+  } while (vint > 0);
   return len;
+}
+static uint32_t read_ovint32(const uint8_t *ptr, int8_t& len, int offset_bits) {
+  int mask_bits = 7 - offset_bits;
+  uint8_t mask = (1 << mask_bits) - 1;
+  uint32_t ret = *ptr & mask;
+  len = 1;
+  while (*ptr++ & (mask + 1)) {
+    uint32_t b = *ptr & '\x7F';
+    ret += (b << mask_bits);
+    mask = '\x7F';
+    mask_bits += 7;
+    len++;
+  }
+  return ret;
 }
     static int8_t get_svint60_len(int64_t vint) {
       vint = abs(vint);
