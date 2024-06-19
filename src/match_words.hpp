@@ -59,7 +59,7 @@ class word_matcher {
       buf_len += vlen;
       memcpy(buf + buf_len, word, len);
       buf_len += len;
-      vlen = copy_fvint32(buf + buf_len, ref_id);
+      //vlen = copy_fvint32(buf + buf_len, ref_id);
       size_t word_pos = words.push_back(buf, buf_len);
       word_positions.push_back(word_pos);
     }

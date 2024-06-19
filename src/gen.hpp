@@ -207,6 +207,10 @@ static void append_uint32(uint32_t u32, byte_vec& v) {
   v.push_back((u32 >> 16) & 0xFF);
   v.push_back(u32 >> 24);
 }
+static void append_byte_vec(byte_vec& vec, uint8_t *val, int val_len) {
+  for (int i = 0; i < val_len; i++)
+    vec.push_back(val[i]);
+}
 static uint32_t read_uint16(byte_vec& v, int pos) {
   uint32_t ret = v[pos++];
   ret |= (v[pos] << 8);

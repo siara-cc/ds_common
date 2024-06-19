@@ -1,0 +1,25 @@
+C = gcc
+CXXFLAGS = -pthread -march=native
+CXX = g++
+CXXFLAGS = -pthread -std=c++11 -march=native
+INCLUDES = -I./src
+L_FLAGS =
+#L_FLAGS = -lsnappy -llz4 -lbrotlienc -lbrotlidec -lz
+M_FLAGS = -mbmi2 -mpopcnt
+#OBJS = build/imain.o
+
+opt: CXXFLAGS += -g -O2 -funroll-loops -DNDEBUG
+opt: test_ms
+
+debug: CXXFLAGS += -g -O0 -fno-inline
+debug: test_ms
+
+release: CXXFLAGS += -O2 -fno-inline
+release: test_ms
+
+clean:
+	rm test_ms
+	rm -rf test_ms.dSYM
+
+test_ms: test_match_seq.cpp ../src/match_seq.hpp ../../ds_common/src/gen.hpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -std=c++11 test_match_seq.cpp -o test_ms $(L_FLAGS)
