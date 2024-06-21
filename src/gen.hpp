@@ -353,6 +353,9 @@ class byte_str {
     size_t length() {
       return len;
     }
+    void set_length(int _len) {
+      len = _len;
+    }
     void clear() {
       len = 0;
     }
