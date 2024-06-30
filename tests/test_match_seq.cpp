@@ -315,9 +315,9 @@ int main(int argc, const char *argv[]) {
   gen::is_gen_print_enabled = true;
   if (argc > 1) {
     if (argc > 2 && strncmp(argv[1], "-d", 2) == 0)
-      test_decode_file1(argv[2]);
+      test_decode_file(argv[2]);
     else
-      test_file1(argv[1], false);
+      test_file(argv[1]); ///, false);
   } else
     test_string();
   return 1;

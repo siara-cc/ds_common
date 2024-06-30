@@ -34,7 +34,7 @@ class bit_vector {
       size_t byte_pos = bit_no / 8;
       if ((bit_no % 8) == 0)
         byte_pos++;
-      while (bv.size() < byte_pos + 1)
+      while (bv.size() <= byte_pos)
         bv.push_back(all_ones ? 0xFF : 0x00);
       uint8_t mask = 0x80 >> (bit_no % 8);
       if (val)
@@ -50,7 +50,7 @@ class bit_vector {
       return (bv[byte_pos] & mask) > 0;
     }
     void reset() {
-      bv.resize(0);
+      bv.clear();
     }
 };
 

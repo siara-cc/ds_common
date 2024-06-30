@@ -54,9 +54,9 @@ class byte_blocks {
     void release_blocks() {
       for (size_t i = 0; i < blocks.size(); i++) {
         if (is_allocated[i])
-          delete blocks[i];
+          delete [] blocks[i];
       }
-      blocks.resize(0);
+      blocks.clear();
       is_allocated.reset();
       is_released = true;
       block_remaining = 0;

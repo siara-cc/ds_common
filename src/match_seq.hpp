@@ -45,7 +45,7 @@ class seq_matcher {
       }
       return nullptr;
     }
-    #define SMATCH_MAX_POS 16
+    #define SMATCH_MAX_POS 256
     void append_cyclic_pos(pos_list *token_positions, int pos) {
       if (token_positions->size() < SMATCH_MAX_POS) {
         token_positions->push_back(pos);
