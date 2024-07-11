@@ -15,6 +15,8 @@ class byte_blocks {
     size_t block_remaining;
     std::vector<uint8_t *> blocks;
     uint8_t *reserve(size_t val_len, size_t& pos) {
+      if (val_len == 0)
+        val_len = 1;
       if (val_len <= block_remaining) {
         uint8_t *ret = blocks[blocks.size() - 1];
         pos = blocks.size() * block_size;
