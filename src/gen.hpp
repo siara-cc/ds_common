@@ -251,6 +251,8 @@ static uint32_t read_uintx(const uint8_t *ptr, uint32_t mask) {
   return ret & mask; // faster endian dependent
 }
 uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) {
+  if (remaining == 0)
+    return nullptr;
   last_line += last_line_len;
   while (*last_line == '\r' || *last_line == '\n' || *last_line == '\0') {
     last_line++;
