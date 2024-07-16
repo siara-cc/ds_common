@@ -216,10 +216,11 @@ static uint32_t read_uint16(byte_vec& v, int pos) {
   ret |= (v[pos] << 8);
   return ret;
 }
-static uint32_t read_uint16(uint8_t *ptr) {
-  uint32_t ret = *ptr++;
-  ret |= (*ptr << 8);
-  return ret;
+static uint32_t read_uint16(const uint8_t *ptr) {
+  return *((uint16_t *) ptr); // faster endian dependent
+  // uint32_t ret = *ptr++;
+  // ret |= (*ptr << 8);
+  // return ret;
 }
 static uint32_t read_uint24(byte_vec& v, int pos) {
   uint32_t ret = v[pos++];
@@ -227,11 +228,12 @@ static uint32_t read_uint24(byte_vec& v, int pos) {
   ret |= (v[pos] << 16);
   return ret;
 }
-static uint32_t read_uint24(uint8_t *ptr) {
-  uint32_t ret = *ptr++;
-  ret |= (*ptr++ << 8);
-  ret |= (*ptr << 16);
-  return ret;
+static uint32_t read_uint24(const uint8_t *ptr) {
+  return *((uint32_t *) ptr) & 0x00FFFFFF; // faster endian dependent
+  // uint32_t ret = *ptr++;
+  // ret |= (*ptr++ << 8);
+  // ret |= (*ptr << 16);
+  // return ret;
 }
 static uint32_t read_uint32(uint8_t *ptr) {
   return *((uint32_t *) ptr);
@@ -290,6 +292,9 @@ class byte_str {
       buf = NULL;
       is_buf_given = false;
       set_buf_max_len(_buf, _limit, _grow_bytes);
+    }
+    int get_limit() {
+      return limit;
     }
     void set_buf_max_len(uint8_t *_buf, int _limit, int _grow_bytes = 0) {
       if (_buf == NULL) {
