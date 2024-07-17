@@ -274,79 +274,28 @@ uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) 
 }
 
 class byte_str {
-  int limit;
-  int grow_bytes;
+  int max_len;
   int len;
   uint8_t *buf;
-  bool is_buf_given;
   public:
     byte_str() {
-      is_buf_given = false;
-      buf = NULL;
     }
-    ~byte_str() {
-      if (!is_buf_given && buf != NULL)
-        delete [] buf;
+    byte_str(uint8_t *_buf, int _max_len) {
+      set_buf_max_len(_buf, _max_len);
     }
-    byte_str(uint8_t *_buf, int _limit, int _grow_bytes = 0) {
-      buf = NULL;
-      is_buf_given = false;
-      set_buf_max_len(_buf, _limit, _grow_bytes);
-    }
-    int get_limit() {
-      return limit;
-    }
-    void set_buf_max_len(uint8_t *_buf, int _limit, int _grow_bytes = 0) {
-      if (_buf == NULL) {
-        if (buf != NULL)
-          delete [] buf;
-      }
+    void set_buf_max_len(uint8_t *_buf, int _max_len) {
       len = 0;
-      if (_buf == NULL)
-        buf = new uint8_t[_limit];
-      else
-        buf = _buf;
-      limit = _limit;
-      grow_bytes = _grow_bytes;
-      if (_buf != NULL)
-        is_buf_given = true;
-    }
-    void expand(int addl_len = 1) {
-      int grow_len = addl_len / grow_bytes + 1;
-      grow_len *= grow_bytes;
-      uint8_t *new_buf = new uint8_t[limit + grow_len];
-      memcpy(new_buf, buf, len);
-      limit += grow_len;
-      delete [] buf;
-      is_buf_given = false;
-    }
-    void truncate(int new_len) {
-      // if (new_len < 0) {
-      //   printf("New len < 0 : %d, %d\n", new_len, len);
-      //   return;
-      // }
-      if (new_len > len && new_len >= limit) {
-        if (grow_bytes > 0)
-          expand(new_len - len);
-      } else
-        len = new_len;
+      buf = _buf;
+      max_len = _max_len;
     }
     void append(uint8_t b) {
-      if (len >= limit) {
-        if (grow_bytes == 0)
-          return;
-        expand();
-      }
+      if (len >= max_len)
+        return;
       buf[len++] = b;
     }
     void append(uint8_t *b, size_t blen) {
-      if (len >= limit) {
-        if (grow_bytes == 0)
-          return;
-        expand();
-      }
       size_t start = 0;
-      while (start < blen) {
+      while (len < max_len && start < blen) {
         buf[len++] = *b++;
         start++;
       }
@@ -362,6 +311,12 @@ class byte_str {
     }
     void set_length(int _len) {
       len = _len;
+    }
+    void truncate(int _len) {
+      len = _len;
+    }
+    size_t get_limit() {
+      return max_len;
     }
     void clear() {
       len = 0;
