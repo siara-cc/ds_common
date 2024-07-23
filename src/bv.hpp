@@ -10,9 +10,7 @@ typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
 static uint32_t get_lkup_tbl_size(uint32_t count, int block_size, int entry_size) {
-  double d = count - 1;
-  d /= block_size;
-  uint32_t ret = floor(d) + 1;
+  uint32_t ret = (count / block_size) + ((count % block_size) == 0 ? 0 : 1);
   ret *= entry_size;
   return ret;
 }
