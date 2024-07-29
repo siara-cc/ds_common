@@ -22,7 +22,7 @@ class huffman {
     return e1->freq > e2->freq;
   }
   void process_input() {
-    for (int i = 0; i < _freqs.size(); i++) {
+    for (size_t i = 0; i < _freqs.size(); i++) {
       _all_entries.push_back(new entry(_freqs[i], NULL, true));
     }
     std::vector<entry *> _entries = _all_entries;
@@ -53,10 +53,10 @@ class huffman {
       process_input();
     }
     ~huffman() {
-      for (int i = 0; i < _all_entries.size(); i++)
+      for (size_t i = 0; i < _all_entries.size(); i++)
         delete _all_entries[i];
     }
-    uint32_t get_code(int i, int& len) {
+    uint32_t get_code(int i, uint32_t& len) {
       uint32_t ret = 0;
       len = 0;
       entry *start = _all_entries[i];

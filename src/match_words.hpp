@@ -72,7 +72,7 @@ class word_matcher {
       int last_word_len = 0;
       bool is_prev_non_word = false;
       uint32_t ret = word_positions.size();
-      for (uint32_t i = 0; i < len; i++) {
+      for (int i = 0; i < len; i++) {
         uint8_t c = words[i];
         if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c > 127) {
           if (last_word_len > 4 && is_prev_non_word) {
@@ -119,11 +119,11 @@ class word_matcher {
       uint32_t freq_count = 0;
       if (word_combis_sz > 0) {
         uint32_t pwpos;
-        uint32_t wpos;
+        uint32_t wpos = 0;
         uint8_t *w = nullptr;
-        uint32_t w_len;
-        int8_t vlen;
-        for (int i = 1; i < word_combis_sz; i++) {
+        uint32_t w_len = 0;
+        int8_t vlen = 0;
+        for (size_t i = 1; i < word_combis_sz; i++) {
           wpos = words_sorted[i];
           pwpos = words_sorted[i - 1];
           w = words[wpos] + 5;
@@ -146,7 +146,7 @@ class word_matcher {
         if (w != nullptr)
           gen::copy_uint32(word_freq_vec.size(), w - 5 - vlen);
         word_freq_vec.push_back((combi_freq) {wpos + 5 + vlen, w_len, freq_count + 1});
-        for (int i = 0; i < word_freq_vec.size(); i++) {
+        for (size_t i = 0; i < word_freq_vec.size(); i++) {
           combi_freq *cf = &word_freq_vec[i];
           word_freq_ptr_vec.push_back(cf);
         }
@@ -154,7 +154,7 @@ class word_matcher {
           return lhs->freq > rhs->freq;
         });
         int cur_grp = 0;
-        for (int i = 0; i < word_freq_ptr_vec.size(); i++) {
+        for (size_t i = 0; i < word_freq_ptr_vec.size(); i++) {
           combi_freq *cf = word_freq_ptr_vec[i];
           if (i == freq_grp_caps[cur_grp])
             cur_grp++;

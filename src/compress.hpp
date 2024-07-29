@@ -64,7 +64,7 @@ static size_t compress_block(int8_t type, const uint8_t *input_block, size_t sz,
   return c_size;
 }
 
-static size_t decompress_block(int8_t type, const uint8_t *input_str, size_t sz, uint8_t *out_buf, int out_size) {
+static size_t decompress_block(int8_t type, const uint8_t *input_str, size_t sz, uint8_t *out_buf, size_t out_size) {
   size_t d_size = out_size;
   switch (type) {
     case CMPR_TYPE_SNAPPY:
