@@ -238,6 +238,9 @@ static uint32_t read_uint24(const uint8_t *ptr) {
 static uint32_t read_uint32(uint8_t *ptr) {
   return *((uint32_t *) ptr);
 }
+static uint64_t read_uint64(uint8_t *t) {
+  return *((uint64_t *) t);
+}
 static uint8_t *read_uint64(uint8_t *t, uint64_t& u64) {
   u64 = *((uint64_t *) t); // faster endian dependent
   return t + 8;
