@@ -207,6 +207,16 @@ static void append_uint32(uint32_t u32, byte_vec& v) {
   v.push_back((u32 >> 16) & 0xFF);
   v.push_back(u32 >> 24);
 }
+static void append_uint64(uint64_t u64, byte_vec& v) {
+  v.push_back(u64 & 0xFF);
+  v.push_back((u64 >> 8) & 0xFF);
+  v.push_back((u64 >> 16) & 0xFF);
+  v.push_back((u64 >> 24) & 0xFF);
+  v.push_back((u64 >> 32) & 0xFF);
+  v.push_back((u64 >> 40) & 0xFF);
+  v.push_back((u64 >> 48) & 0xFF);
+  v.push_back(u64 >> 56);
+}
 static void append_byte_vec(byte_vec& vec, uint8_t *val, int val_len) {
   for (int i = 0; i < val_len; i++)
     vec.push_back(val[i]);

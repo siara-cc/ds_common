@@ -60,8 +60,20 @@ class int_bit_vector {
     int last_idx;
     uint8_t last_byte_bits;
   public:
+    int_bit_vector() {
+    }
     int_bit_vector(byte_vec *_ptrs, int _bit_len, int _count)
         : int_ptrs (_ptrs), bit_len (_bit_len), count (_count) {
+      int_ptrs->clear();
+      int_ptrs->reserve(bit_len * count / 8 + 1);
+      int_ptrs->push_back(0);
+      last_byte_bits = 8;
+      last_idx = 0;
+    }
+    void init(byte_vec *_ptrs, int _bit_len, int _count) {
+      int_ptrs = _ptrs;
+      bit_len = _bit_len;
+      count = _count;
       int_ptrs->clear();
       int_ptrs->reserve(bit_len * count / 8 + 1);
       int_ptrs->push_back(0);
