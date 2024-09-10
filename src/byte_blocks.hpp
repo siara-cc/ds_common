@@ -77,6 +77,14 @@ class byte_blocks {
       count++;
       return pos;
     }
+    size_t push_back_rev(const void *val, int val_len) {
+      size_t pos;
+      uint8_t *buf = reserve(val_len, pos);
+      for (int i = val_len - 1; i >= 0; i--)
+        buf[val_len - i - 1] = ((uint8_t *) val)[i];
+      count++;
+      return pos;
+    }
     size_t push_back_with_vlen(const void *val, int val_len) {
       size_t pos;
       int8_t vlen = gen::get_vlen_of_uint32(val_len);
