@@ -287,8 +287,8 @@ uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) 
 }
 
 class byte_str {
-  int max_len;
-  int len;
+  uint32_t max_len;
+  uint32_t len;
   uint8_t *buf;
   public:
     byte_str() {
@@ -302,11 +302,10 @@ class byte_str {
       max_len = _max_len;
     }
     void append(uint8_t b) {
-      if (len >= max_len)
-        return;
-      buf[len++] = b;
+      if (len < max_len)
+        buf[len++] = b;
     }
-    void append(uint8_t *b, size_t blen) {
+    void append(uint8_t *b, uint32_t blen) {
       size_t start = 0;
       while (len < max_len && start < blen) {
         buf[len++] = *b++;
@@ -319,13 +318,10 @@ class byte_str {
     uint8_t operator[](uint32_t idx) const {
       return buf[idx];
     }
-    size_t length() {
+    uint32_t length() {
       return len;
     }
-    void set_length(int _len) {
-      len = _len;
-    }
-    void truncate(int _len) {
+    void set_length(uint32_t _len) {
       len = _len;
     }
     size_t get_limit() {
