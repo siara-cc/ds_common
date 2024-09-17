@@ -160,14 +160,14 @@ static void copy_uint32(uint32_t input, uint8_t *out) {
   *out++ = (input >> 16) & 0xFF;
   *out = (input >> 24);
 }
-static void copy_vint32(uint32_t input, uint8_t *out, int8_t vlen) {
+static void copy_vint32(uint32_t input, uint8_t *out, size_t vlen) {
   for (int i = vlen - 1; i > 0; i--)
     *out++ = 0x80 + ((input >> (7 * i)) & 0x7F);
   *out = input & 0x7F;
 }
-static uint32_t read_vint32(const uint8_t *ptr, int8_t *vlen = NULL) {
+static uint32_t read_vint32(const uint8_t *ptr, size_t *vlen = NULL) {
   uint32_t ret = 0;
-  int8_t len = 5; // read max 5 bytes
+  size_t len = 5; // read max 5 bytes
   do {
     ret <<= 7;
     ret += *ptr & 0x7F;
@@ -217,11 +217,11 @@ static void append_uint64(uint64_t u64, byte_vec& v) {
   v.push_back((u64 >> 48) & 0xFF);
   v.push_back(u64 >> 56);
 }
-static void append_byte_vec(byte_vec& vec, uint8_t *val, int val_len) {
-  for (int i = 0; i < val_len; i++)
+static void append_byte_vec(byte_vec& vec, uint8_t *val, size_t val_len) {
+  for (size_t i = 0; i < val_len; i++)
     vec.push_back(val[i]);
 }
-static uint32_t read_uint16(byte_vec& v, int pos) {
+static uint32_t read_uint16(byte_vec& v, size_t pos) {
   uint32_t ret = v[pos++];
   ret |= (v[pos] << 8);
   return ret;
@@ -232,7 +232,7 @@ static uint32_t read_uint16(const uint8_t *ptr) {
   // ret |= (*ptr << 8);
   // return ret;
 }
-static uint32_t read_uint24(byte_vec& v, int pos) {
+static uint32_t read_uint24(byte_vec& v, size_t pos) {
   uint32_t ret = v[pos++];
   ret |= (v[pos++] << 8);
   ret |= (v[pos] << 16);
@@ -265,7 +265,7 @@ static uint32_t read_uintx(const uint8_t *ptr, uint32_t mask) {
   uint32_t ret = *((uint32_t *) ptr);
   return ret & mask; // faster endian dependent
 }
-uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) {
+uint8_t *extract_line(uint8_t *last_line, size_t& last_line_len, size_t remaining) {
   if (remaining == 0)
     return nullptr;
   last_line += last_line_len;
@@ -287,16 +287,16 @@ uint8_t *extract_line(uint8_t *last_line, int& last_line_len, size_t remaining) 
 }
 
 class byte_str {
-  uint32_t max_len;
-  uint32_t len;
+  size_t max_len;
+  size_t len;
   uint8_t *buf;
   public:
     byte_str() {
     }
-    byte_str(uint8_t *_buf, int _max_len) {
+    byte_str(uint8_t *_buf, size_t _max_len) {
       set_buf_max_len(_buf, _max_len);
     }
-    void set_buf_max_len(uint8_t *_buf, int _max_len) {
+    void set_buf_max_len(uint8_t *_buf, size_t _max_len) {
       len = 0;
       buf = _buf;
       max_len = _max_len;
@@ -305,7 +305,7 @@ class byte_str {
       if (len < max_len)
         buf[len++] = b;
     }
-    void append(uint8_t *b, uint32_t blen) {
+    void append(uint8_t *b, size_t blen) {
       size_t start = 0;
       while (len < max_len && start < blen) {
         buf[len++] = *b++;
@@ -315,13 +315,13 @@ class byte_str {
     uint8_t *data() {
       return buf;
     }
-    uint8_t operator[](uint32_t idx) const {
+    uint8_t operator[](size_t idx) const {
       return buf[idx];
     }
-    uint32_t length() {
+    size_t length() {
       return len;
     }
-    void set_length(uint32_t _len) {
+    void set_length(size_t _len) {
       len = _len;
     }
     size_t get_limit() {

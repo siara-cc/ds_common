@@ -9,13 +9,13 @@ namespace gen {
 typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
-static uint32_t get_lkup_tbl_size(uint32_t count, int block_size, int entry_size) {
-  uint32_t ret = (count / block_size) + ((count % block_size) == 0 ? 0 : 1);
+static size_t get_lkup_tbl_size(size_t count, size_t block_size, size_t entry_size) {
+  size_t ret = (count / block_size) + ((count % block_size) == 0 ? 0 : 1);
   ret *= entry_size;
   return ret;
 }
 
-static uint32_t get_lkup_tbl_size2(uint32_t count, int block_size, int entry_size) {
+static size_t get_lkup_tbl_size2(size_t count, size_t block_size, size_t entry_size) {
   return get_lkup_tbl_size(count, block_size, entry_size) + entry_size;
 }
 
@@ -55,9 +55,9 @@ class bit_vector {
 class int_bit_vector {
   private:
     byte_vec *int_ptrs;
-    int bit_len;
-    int count;
-    int last_idx;
+    size_t bit_len;
+    size_t count;
+    size_t last_idx;
     uint8_t last_byte_bits;
     static void append_uint32(uint32_t u32, byte_vec& v) {
       v.push_back(u32 & 0xFF);
@@ -78,10 +78,10 @@ class int_bit_vector {
   public:
     int_bit_vector() {
     }
-    int_bit_vector(byte_vec *_ptrs, int _bit_len, int _count) {
+    int_bit_vector(byte_vec *_ptrs, size_t _bit_len, size_t _count) {
       init(_ptrs, _bit_len, _count);
     }
-    void init(byte_vec *_ptrs, int _bit_len, int _count) {
+    void init(byte_vec *_ptrs, size_t _bit_len, size_t _count) {
       int_ptrs = _ptrs;
       bit_len = _bit_len;
       count = _count;
@@ -94,7 +94,7 @@ class int_bit_vector {
     void append(uint32_t given_ptr) {
       uint64_t ptr = given_ptr;
       uint64_t *last_ptr = (uint64_t *) (int_ptrs->data() + int_ptrs->size() - 8);
-      int bits_to_append = bit_len;
+      int bits_to_append = static_cast<int>(bit_len);
       while (bits_to_append > 0) {
         if (bits_to_append < last_byte_bits) {
           last_byte_bits -= bits_to_append;
@@ -114,18 +114,18 @@ class int_bit_vector {
 class int_bv_reader {
   private:
     uint8_t *int_bv;
-    int bit_len;
+    size_t bit_len;
   public:
     int_bv_reader() {
     }
-    void init(uint8_t *_int_bv, int _bit_len) {
+    void init(uint8_t *_int_bv, size_t _bit_len) {
       int_bv = _int_bv;
       bit_len = _bit_len;
     }
-    uint32_t operator[](int pos) {
+    uint32_t operator[](size_t pos) {
       uint64_t bit_pos = pos * bit_len;
       uint64_t *ptr_loc = (uint64_t *) int_bv + bit_pos / 64;
-      int bits_occu = (bit_pos % 64);
+      size_t bits_occu = (bit_pos % 64);
       uint64_t ret = (*ptr_loc++ << bits_occu);
       if (bits_occu + bit_len <= 64)
         return ret >> (64 - bit_len);

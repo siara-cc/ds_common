@@ -106,7 +106,7 @@ class word_matcher {
       printf("No. of words: %lu\n", word_combis_sz);
       words_sorted = word_positions;
       std::sort(words_sorted.begin(), words_sorted.end(), [this](const uint32_t& l, const uint32_t& r) -> bool {
-        int8_t vlen;
+        size_t vlen;
         uint8_t *lhs = words[l] + 5;
         uint32_t lhs_len = gen::read_fvint32(lhs, vlen);
         lhs += vlen;
@@ -122,7 +122,7 @@ class word_matcher {
         uint32_t wpos = 0;
         uint8_t *w = nullptr;
         uint32_t w_len = 0;
-        int8_t vlen = 0;
+        size_t vlen = 0;
         for (size_t i = 1; i < word_combis_sz; i++) {
           wpos = words_sorted[i];
           pwpos = words_sorted[i - 1];
@@ -132,12 +132,12 @@ class word_matcher {
           uint8_t *pw = words[pwpos];
           gen::copy_uint32(word_freq_vec.size(), pw);
           pw += 5;
-          int8_t pvlen;
+          size_t pvlen;
           uint32_t pw_len = gen::read_fvint32(pw, pvlen);
           pw += pvlen;
           int cmp = gen::compare(w, w_len, pw, pw_len);
           if (cmp != 0) {
-            word_freq_vec.push_back((combi_freq) {pwpos + 5 + pvlen, pw_len, freq_count + 1});
+            word_freq_vec.push_back((combi_freq) {static_cast<uint32_t>(pwpos + 5 + pvlen), pw_len, freq_count + 1});
             freq_count = 0;
           } else {
             freq_count++;
@@ -145,7 +145,7 @@ class word_matcher {
         }
         if (w != nullptr)
           gen::copy_uint32(word_freq_vec.size(), w - 5 - vlen);
-        word_freq_vec.push_back((combi_freq) {wpos + 5 + vlen, w_len, freq_count + 1});
+        word_freq_vec.push_back((combi_freq) {static_cast<uint32_t>(wpos + 5 + vlen), w_len, freq_count + 1});
         for (size_t i = 0; i < word_freq_vec.size(); i++) {
           combi_freq *cf = &word_freq_vec[i];
           word_freq_ptr_vec.push_back(cf);
