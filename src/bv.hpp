@@ -19,33 +19,45 @@ static size_t get_lkup_tbl_size2(size_t count, size_t block_size, size_t entry_s
   return get_lkup_tbl_size(count, block_size, entry_size) + entry_size;
 }
 
+template <class T>
 class bit_vector {
   private:
-    std::vector<uint8_t> bv;
+    std::vector<T> bv;
     bool all_ones;
+    size_t highest_bit_no;
   public:
     bit_vector(bool _all_ones = false) {
       all_ones = _all_ones;
+      highest_bit_no = 0;
     }
     // bit_no starts from 0
     void set(size_t bit_no, bool val) {
-      size_t byte_pos = bit_no / 8;
-      if ((bit_no % 8) == 0)
-        byte_pos++;
-      while (bv.size() <= byte_pos)
-        bv.push_back(all_ones ? 0xFF : 0x00);
-      uint8_t mask = 0x80 >> (bit_no % 8);
+      if (highest_bit_no < bit_no)
+        highest_bit_no = bit_no;
+      size_t bit_width = (sizeof(T) * 8);
+      size_t pos = bit_no / bit_width;
+      while (bv.size() <= pos)
+        bv.push_back(all_ones ? (T) UINT64_MAX : 0x00);
+      T mask = 1ULL << (bit_no % bit_width);
       if (val)
-        bv[byte_pos] |= mask;
+        bv[pos] |= mask;
       else
-        bv[byte_pos] &= ~mask;
+        bv[pos] &= ~mask;
     }
     bool operator[](size_t bit_no) {
-      size_t byte_pos = bit_no / 8;
-      if ((bit_no % 8) == 0)
-        byte_pos++;
-      uint8_t mask = 0x80 >> (bit_no % 8);
-      return (bv[byte_pos] & mask) > 0;
+      size_t bit_width = (sizeof(T) * 8);
+      size_t pos = bit_no / bit_width;
+      T mask = 1ULL << (bit_no % bit_width);
+      return (bv[pos] & mask) > 0;
+    }
+    size_t get_highest() {
+      return highest_bit_no;
+    }
+    size_t size_bytes() {
+      return sizeof(T) * bv.size();
+    }
+    std::vector<T> *raw_data() {
+      return &bv;
     }
     void reset() {
       bv.clear();

@@ -8,7 +8,7 @@ namespace gen {
 class byte_blocks {
   private:
     const int block_size;
-    bit_vector is_allocated;
+    bit_vector<uint8_t> is_allocated;
     bool is_released;
     size_t count;
   protected:
