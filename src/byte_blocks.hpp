@@ -64,6 +64,9 @@ class byte_blocks {
       block_remaining = 0;
       count = 0;
     }
+    size_t get_size_in_bytes() {
+      return block_size * blocks.size() + is_allocated.size_bytes();
+    }
     size_t push_back(const uint8_t c) {
       size_t pos;
       uint8_t *buf = reserve(1, pos);
