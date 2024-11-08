@@ -9,6 +9,7 @@ class byte_blocks {
   private:
     const int block_size;
     bit_vector<uint8_t> is_allocated;
+    bool store_remaining;
     bool is_released;
     size_t count;
   protected:
@@ -38,10 +39,15 @@ class byte_blocks {
         blocks.push_back(new_block + i * block_size);
       }
       block_remaining -= val_len;
+      if (store_remaining) {
+        block_remaining -= sizeof(uint32_t);
+        gen::copy_uint32(block_remaining, new_block + needed_blocks * block_size - sizeof(uint32_t));
+      }
       return new_block;
     }
   public:
-    byte_blocks(int _block_size = 4096) : block_size (_block_size) {
+    byte_blocks(int _block_size = 4096, bool _store_remaining = false)
+           : block_size (_block_size), store_remaining (_store_remaining) {
       count = 0;
       block_remaining = 0;
       is_released = false;
@@ -73,14 +79,14 @@ class byte_blocks {
       *buf = c;
       return pos;
     }
-    size_t push_back(const void *val, int val_len) {
+    size_t push_back(const void *val, size_t val_len) {
       size_t pos;
       uint8_t *buf = reserve(val_len, pos);
       memcpy(buf, val, val_len);
       count++;
       return pos;
     }
-    size_t push_back_rev(const void *val, int val_len) {
+    size_t push_back_rev(const void *val, size_t val_len) {
       size_t pos;
       uint8_t *buf = reserve(val_len, pos);
       for (int i = val_len - 1; i >= 0; i--)
@@ -88,7 +94,7 @@ class byte_blocks {
       count++;
       return pos;
     }
-    size_t push_back_with_vlen(const void *val, int val_len) {
+    size_t push_back_with_vlen(const void *val, size_t val_len) {
       size_t pos;
       int8_t vlen = gen::get_vlen_of_uint32(val_len);
       uint8_t *buf = reserve(val_len + vlen, pos);
@@ -137,6 +143,16 @@ class byte_blocks {
       gen::copy_svint15(input, buf, vlen);
       count++;
       return pos;
+    }
+    size_t next_val(size_t pos) {
+      size_t pos_in_block = pos % block_size;
+      uint8_t *cur_block = blocks[pos / block_size];
+      if (pos_in_block + gen::read_uint32(cur_block + block_size - sizeof(uint32_t)) < block_size)
+        return pos_in_block;
+      pos += block_size;
+      if (count > pos / block_size)
+        return pos - pos_in_block;
+      return 0;
     }
 };
 
