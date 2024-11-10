@@ -6,6 +6,15 @@
 
 namespace gen {
 
+// Function qualifiers
+#ifndef __fq1
+#define __fq1
+#endif
+
+#ifndef __fq2
+#define __fq2
+#endif
+
 typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
@@ -16,7 +25,8 @@ static size_t get_lkup_tbl_size(size_t count, size_t block_size, size_t entry_si
 }
 
 static size_t get_lkup_tbl_size2(size_t count, size_t block_size, size_t entry_size) {
-  return get_lkup_tbl_size(count, block_size, entry_size) + entry_size;
+  size_t ret = get_lkup_tbl_size(count, block_size, entry_size) + entry_size;
+  return ret;
 }
 
 template <class T>
@@ -128,13 +138,13 @@ class int_bv_reader {
     uint8_t *int_bv;
     size_t bit_len;
   public:
-    int_bv_reader() {
+    __fq1 __fq2 int_bv_reader() {
     }
-    void init(uint8_t *_int_bv, size_t _bit_len) {
+    __fq1 __fq2 void init(uint8_t *_int_bv, size_t _bit_len) {
       int_bv = _int_bv;
       bit_len = _bit_len;
     }
-    uint32_t operator[](size_t pos) {
+    __fq1 __fq2 uint32_t operator[](size_t pos) {
       uint64_t bit_pos = pos * bit_len;
       uint64_t *ptr_loc = (uint64_t *) int_bv + bit_pos / 64;
       size_t bits_occu = (bit_pos % 64);

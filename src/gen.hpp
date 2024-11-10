@@ -10,6 +10,15 @@
 
 namespace gen {
 
+// Function qualifiers
+#ifndef __fq1
+#define __fq1
+#endif
+
+#ifndef __fq2
+#define __fq2
+#endif
+
 typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
@@ -63,6 +72,11 @@ static size_t max(size_t v1, size_t v2) {
 }
 static size_t min(size_t v1, size_t v2) {
   return v1 < v2 ? v1 : v2;
+}
+static size_t size_align8(size_t input) {
+  if ((input % 8) == 0)
+    return input;
+  return input + (8 - input % 8);
 }
 static clock_t print_time_taken(clock_t t, const char *msg) {
   t = clock() - t;
@@ -291,43 +305,43 @@ class byte_str {
   size_t len;
   uint8_t *buf;
   public:
-    byte_str() {
+    __fq1 __fq2 byte_str() {
     }
-    byte_str(uint8_t *_buf, size_t _max_len) {
+    __fq1 __fq2 byte_str(uint8_t *_buf, size_t _max_len) {
       set_buf_max_len(_buf, _max_len);
     }
-    void set_buf_max_len(uint8_t *_buf, size_t _max_len) {
+    __fq1 __fq2 void set_buf_max_len(uint8_t *_buf, size_t _max_len) {
       len = 0;
       buf = _buf;
       max_len = _max_len;
     }
-    void append(uint8_t b) {
+    __fq1 __fq2 void append(uint8_t b) {
       if (len < max_len)
         buf[len++] = b;
     }
-    void append(uint8_t *b, size_t blen) {
+    __fq1 __fq2 void append(uint8_t *b, size_t blen) {
       size_t start = 0;
       while (len < max_len && start < blen) {
         buf[len++] = *b++;
         start++;
       }
     }
-    uint8_t *data() {
+    __fq1 __fq2 uint8_t *data() {
       return buf;
     }
-    uint8_t operator[](size_t idx) const {
+    __fq1 __fq2 uint8_t operator[](size_t idx) const {
       return buf[idx];
     }
-    size_t length() {
+    __fq1 __fq2 size_t length() {
       return len;
     }
-    void set_length(size_t _len) {
+    __fq1 __fq2 void set_length(size_t _len) {
       len = _len;
     }
-    size_t get_limit() {
+    __fq1 __fq2 size_t get_limit() {
       return max_len;
     }
-    void clear() {
+    __fq1 __fq2 void clear() {
       len = 0;
     }
 };
