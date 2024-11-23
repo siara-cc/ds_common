@@ -147,6 +147,8 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
       return (1LL << start) - 1;
     }
     static size_t read_svint60_len(uint8_t *ptr) {
+      if (*ptr == 0)
+        return 1;
       size_t ret = ((*ptr >> 4) & 0x07);
       if (*ptr & 0x80)
         return 1 + ret;
@@ -172,6 +174,8 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
         out.push_back((lng >> (vlen * 8)) & 0xFF);
     }
     static int64_t read_svint60(uint8_t *ptr) {
+      if (*ptr == 0)
+        return -0;
       int64_t ret = *ptr & 0x0F;
       bool is_neg = true;
       if (*ptr & 0x80)
@@ -226,6 +230,13 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
       *out++ = ((input >> (vlen * 8)) & 0x7F) + (vlen << 7);
       while (vlen--)
         *out++ = ((input >> (vlen * 8)) & 0xFF);
+    }
+    static void append_svint15(byte_vec& out, uint64_t input) {
+      size_t vlen = get_svint15_len(input);
+      vlen--;
+      out.push_back(((input >> (vlen * 8)) & 0x7F) + (vlen << 7));
+      while (vlen--)
+        out.push_back((input >> (vlen * 8)) & 0xFF);
     }
     static uint64_t read_svint15(uint8_t *ptr) {
       uint64_t ret = *ptr & 0x7F;
