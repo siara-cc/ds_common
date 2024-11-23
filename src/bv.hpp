@@ -18,13 +18,13 @@ namespace gen {
 typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
-static size_t get_lkup_tbl_size(size_t count, size_t block_size, size_t entry_size) {
+__fq1 __fq2 static size_t get_lkup_tbl_size(size_t count, size_t block_size, size_t entry_size) {
   size_t ret = (count / block_size) + ((count % block_size) == 0 ? 0 : 1);
   ret *= entry_size;
   return ret;
 }
 
-static size_t get_lkup_tbl_size2(size_t count, size_t block_size, size_t entry_size) {
+__fq1 __fq2 static size_t get_lkup_tbl_size2(size_t count, size_t block_size, size_t entry_size) {
   size_t ret = get_lkup_tbl_size(count, block_size, entry_size) + entry_size;
   return ret;
 }

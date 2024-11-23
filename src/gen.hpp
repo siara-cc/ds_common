@@ -159,16 +159,16 @@ static int compare_rev(const uint8_t *v1, int len1, const uint8_t *v2,
         return 0;
     return (len1 < len2 ? -k : k);
 }
-static void copy_uint16(uint16_t input, uint8_t *out) {
+__fq1 __fq2 static void copy_uint16(uint16_t input, uint8_t *out) {
   *out++ = input & 0xFF;
   *out = (input >> 8);
 }
-static void copy_uint24(uint32_t input, uint8_t *out) {
+__fq1 __fq2 static void copy_uint24(uint32_t input, uint8_t *out) {
   *out++ = input & 0xFF;
   *out++ = (input >> 8) & 0xFF;
   *out = (input >> 16);
 }
-static void copy_uint32(uint32_t input, uint8_t *out) {
+__fq1 __fq2 static void copy_uint32(uint32_t input, uint8_t *out) {
   *out++ = input & 0xFF;
   *out++ = (input >> 8) & 0xFF;
   *out++ = (input >> 16) & 0xFF;
