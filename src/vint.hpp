@@ -137,14 +137,12 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
               (vint < (1 << 28) ? 4 : (vint < (1LL << 36) ? 5 : (vint < (1LL << 44) ? 6 :
               (vint < (1LL << 52) ? 7 : 8))))));
     }
-    static size_t get_svint60_ceil(int64_t vint) {
-      size_t start = 4;
-      while (start < 60) {
-        if (vint < (1LL << start))
-          return (1LL << start) - 1;
-        start += 8;
+    static size_t get_svint60_ceil(size_t vlen) {
+      size_t bits = 4;
+      while (--vlen) {
+        bits += 8;
       }
-      return (1LL << start) - 1;
+      return (1LL << bits) - 1;
     }
     static size_t read_svint60_len(uint8_t *ptr) {
       if (*ptr == 0)
@@ -155,20 +153,20 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
       return 1 + (7 - ret);
     }
     static void copy_svint60(int64_t input, uint8_t *out, size_t vlen) {
-      vlen--;
       long lng = abs(input);
       if (input < 0)
-        lng = get_svint60_ceil(lng) - lng;
+        lng = get_svint60_ceil(vlen) - lng;
+      vlen--;
       *out++ = ((lng >> (vlen * 8)) & 0x0F) + (input < 0 ? (7 - vlen) << 4 : (0x80 + (vlen << 4)));
       while (vlen--)
         *out++ = ((lng >> (vlen * 8)) & 0xFF);
     }
     static void append_svint60(byte_vec& out, int64_t input) {
       size_t vlen = get_svint60_len(input);
-      vlen--;
       long lng = abs(input);
       if (input < 0)
-        lng = get_svint60_ceil(lng) - lng;
+        lng = get_svint60_ceil(vlen) - lng;
+      vlen--;
       out.push_back(((lng >> (vlen * 8)) & 0x0F) + (input < 0 ? (7 - vlen) << 4 : (0x80 + (vlen << 4))));
       while (vlen--)
         out.push_back((lng >> (vlen * 8)) & 0xFF);
@@ -181,12 +179,13 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
       if (*ptr & 0x80)
         is_neg = false;
       size_t len = read_svint60_len(ptr);
-      while (--len) {
+      size_t i = len;
+      while (--i) {
         ret <<= 8;
         ptr++;
         ret |= *ptr;
       }
-      return is_neg ? ret - get_svint60_ceil(ret) : ret;
+      return is_neg ? ret - get_svint60_ceil(len) : ret;
     }
     static size_t get_svint61_len(uint64_t vint) {
       return vint < (1 << 5) ? 1 : (vint < (1 << 13) ? 2 : (vint < (1 << 21) ? 3 :
