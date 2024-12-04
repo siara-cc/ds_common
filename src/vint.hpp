@@ -1,7 +1,16 @@
 #ifndef _VINT_HPP_
 #define _VINT_HPP_
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <vector>
+
 namespace gen {
+
+typedef std::vector<uint8_t> byte_vec;
+
+#define SVINT60_MIN -0xFFFFFFFFFFFFFFFLL
+#define SVINT60_MAX 0xFFFFFFFFFFFFFFFLL
 
 static size_t append_rvint32(byte_vec& vec, uint32_t u32) {
   size_t len = 0;
@@ -34,6 +43,18 @@ static size_t append_fvint64(byte_vec& vec, uint64_t u64) {
   } while (u64 > 0);
   return len;
 }
+static size_t copy_fvint64(uint8_t *ptr, uint64_t u64) {
+  size_t len = 0;
+  do {
+    uint8_t b = u64 & 0x7F;
+    u64 >>= 7;
+    if (u64 > 0)
+      b |= 0x80;
+    *ptr++ = b;
+    len++;
+  } while (u64 > 0);
+  return len;
+}
 static size_t append_fvint64s(byte_vec& vec, int64_t i64) {
   bool is_neg = (i64 < 0);
   if (is_neg)
@@ -58,11 +79,11 @@ static size_t copy_fvint32(uint8_t *ptr, uint32_t u32) {
   } while (u32 > 0);
   return len;
 }
-static uint32_t read_fvint32(const uint8_t *ptr, size_t& len) {
-  uint32_t ret = *ptr & 0x7F;
+static size_t read_fvint(const uint8_t *ptr, size_t& len) {
+  size_t ret = *ptr & 0x7F;
   len = 1;
   while (*ptr++ & 0x80) {
-    uint32_t bval = *ptr & 0x7F;
+    size_t bval = *ptr & 0x7F;
     ret += (bval << (7 * len));
     len++;
   }
@@ -152,8 +173,9 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
         return 1 + ret;
       return 1 + (7 - ret);
     }
+    // not working for negative numbers having 60 bits
     static void copy_svint60(int64_t input, uint8_t *out, size_t vlen) {
-      long lng = abs(input);
+      int64_t lng = abs(input);
       if (input < 0)
         lng = get_svint60_ceil(vlen) - lng;
       vlen--;

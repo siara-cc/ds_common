@@ -33,11 +33,11 @@ class byte_blocks {
       block_remaining = needed_blocks * block_size;
       uint8_t *new_block = new uint8_t[block_remaining];
       memset(new_block, '\0', block_remaining);
+      pos = blocks.size() * block_size;
       for (int i = 0; i < needed_blocks; i++) {
-        is_allocated.set(blocks.size(), i == 0);
+        is_allocated.set(blocks.size() + i, i == 0);
         blocks.push_back(new_block + i * block_size);
       }
-      pos = blocks.size() * block_size - block_size;
       block_remaining -= val_len;
       return new_block;
     }
@@ -98,6 +98,16 @@ class byte_blocks {
       int8_t vlen = gen::get_vlen_of_uint32(val_len);
       uint8_t *buf = reserve(val_len + vlen, pos);
       gen::copy_vint32(val_len, buf, vlen);
+      memcpy(buf + vlen, val, val_len);
+      count++;
+      return pos;
+    }
+    size_t push_back_fvint(const void *val, size_t val_len) {
+      uint8_t *fvint;
+      size_t vlen = gen::copy_fvint64(fvint, val_len);
+      size_t pos;
+      uint8_t *buf = reserve(val_len + vlen, pos);
+      memcpy(buf, fvint, vlen);
       memcpy(buf + vlen, val, val_len);
       count++;
       return pos;

@@ -22,7 +22,7 @@ const size_t freq_grp_caps[] = {(1ul << 7), (1ul << 7) + (1ul << 14),
 
 typedef struct {
   uint32_t pos;
-  uint32_t len;
+  size_t len;
   uint32_t freq;
   uint8_t grp;
   uint32_t ptr;
@@ -108,10 +108,10 @@ class word_matcher {
       std::sort(words_sorted.begin(), words_sorted.end(), [this](const uint32_t& l, const uint32_t& r) -> bool {
         size_t vlen;
         uint8_t *lhs = words[l] + 5;
-        uint32_t lhs_len = gen::read_fvint32(lhs, vlen);
+        size_t lhs_len = gen::read_fvint(lhs, vlen);
         lhs += vlen;
         uint8_t *rhs = words[r] + 5;
-        uint32_t rhs_len = gen::read_fvint32(rhs, vlen);
+        size_t rhs_len = gen::read_fvint(rhs, vlen);
         rhs += vlen;
         return gen::compare(lhs, lhs_len, rhs, rhs_len) < 0;
       });
@@ -121,19 +121,19 @@ class word_matcher {
         uint32_t pwpos;
         uint32_t wpos = 0;
         uint8_t *w = nullptr;
-        uint32_t w_len = 0;
+        size_t w_len = 0;
         size_t vlen = 0;
         for (size_t i = 1; i < word_combis_sz; i++) {
           wpos = words_sorted[i];
           pwpos = words_sorted[i - 1];
           w = words[wpos] + 5;
-          w_len = gen::read_fvint32(w, vlen);
+          w_len = gen::read_fvint(w, vlen);
           w += vlen;
           uint8_t *pw = words[pwpos];
           gen::copy_uint32(word_freq_vec.size(), pw);
           pw += 5;
           size_t pvlen;
-          uint32_t pw_len = gen::read_fvint32(pw, pvlen);
+          size_t pw_len = gen::read_fvint(pw, pvlen);
           pw += pvlen;
           int cmp = gen::compare(w, w_len, pw, pw_len);
           if (cmp != 0) {

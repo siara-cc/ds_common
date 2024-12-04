@@ -5,4 +5,4 @@
 test_ms
 test_mw
 *.bin*
-
+tests/test_vint
