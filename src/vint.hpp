@@ -139,13 +139,13 @@ static size_t read_ovint(const uint8_t *ptr, size_t& len, size_t offset_bits) {
   return ret;
 }
 // Convert int64_t to uint8_t[8] in big-endian format (bytewise sortable)
-void int64ToUint8Sortable(int64_t value, uint8_t output[8]) {
+static void int64ToUint8Sortable(int64_t value, uint8_t output[8]) {
     uint64_t offsetValue = static_cast<uint64_t>(value) + 0x8000000000000000ULL;
     for (int i = 0; i < 8; ++i) {
         output[7 - i] = static_cast<uint8_t>(offsetValue >> (i * 8));
     }
 }
-int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
+static int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     uint64_t result = 0;
     for (int i = 0; i < 8; ++i) {
         result = (result << 8) | input[i];
@@ -153,7 +153,7 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     return static_cast<int64_t>(result - 0x8000000000000000ULL);
 }
     static size_t get_svint60_len(int64_t vint) {
-      vint = abs(vint);
+      vint = std::abs(vint);
       return vint < (1 << 4) ? 1 : (vint < (1 << 12) ? 2 : (vint < (1 << 20) ? 3 :
               (vint < (1 << 28) ? 4 : (vint < (1LL << 36) ? 5 : (vint < (1LL << 44) ? 6 :
               (vint < (1LL << 52) ? 7 : 8))))));
@@ -175,7 +175,7 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     }
     // not working for negative numbers having 60 bits
     static void copy_svint60(int64_t input, uint8_t *out, size_t vlen) {
-      int64_t lng = abs(input);
+      int64_t lng = std::abs(input);
       if (input < 0)
         lng = get_svint60_ceil(vlen) - lng;
       vlen--;
@@ -185,7 +185,7 @@ int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     }
     static void append_svint60(byte_vec& out, int64_t input) {
       size_t vlen = get_svint60_len(input);
-      long lng = abs(input);
+      long lng = std::abs(input);
       if (input < 0)
         lng = get_svint60_ceil(vlen) - lng;
       vlen--;

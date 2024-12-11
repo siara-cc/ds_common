@@ -4,9 +4,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <cstring>
-
-#include "bv.hpp"
-#include "vint.hpp"
+#include <vector>
 
 namespace gen {
 
@@ -32,7 +30,7 @@ static void gen_printf(const char* format, ...) {
   va_end(args);
 }
 
-constexpr double dbl_div[] = {1.000000000000001, 10.000000000000001, 100.000000000000001, 1000.000000000000001, 10000.000000000000001, 100000.000000000000001, 1000000.000000000000001, 10000000.000000000000001, 100000000.000000000000001, 1000000000.000000000000001};
+static constexpr double dbl_div[] = {1.000000000000001, 10.000000000000001, 100.000000000000001, 1000.000000000000001, 10000.000000000000001, 100000.000000000000001, 1000000.000000000000001, 10000000.000000000000001, 100000000.000000000000001, 1000000000.000000000000001};
 static int count_decimal_digits(double d) {
   int counter = 0;
   while (d != (int) d) {
@@ -279,7 +277,7 @@ static uint32_t read_uintx(const uint8_t *ptr, uint32_t mask) {
   uint32_t ret = *((uint32_t *) ptr);
   return ret & mask; // faster endian dependent
 }
-uint8_t *extract_line(uint8_t *last_line, size_t& last_line_len, size_t remaining) {
+static uint8_t *extract_line(uint8_t *last_line, size_t& last_line_len, size_t remaining) {
   if (remaining == 0)
     return nullptr;
   last_line += last_line_len;
