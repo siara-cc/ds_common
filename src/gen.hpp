@@ -17,11 +17,20 @@ namespace gen {
 #define __fq2
 #endif
 
+// Attribute qualifiers
+#ifndef __gq1
+#define __gq1
+#endif
+
+#ifndef __gq2
+#define __gq2
+#endif
+
 typedef std::vector<uint8_t> byte_vec;
 typedef std::vector<uint8_t *> byte_ptr_vec;
 
-static bool is_gen_print_enabled = false;
-static void gen_printf(const char* format, ...) {
+__gq1 __gq2 static bool is_gen_print_enabled = false;
+__fq1 __fq2 static void gen_printf(const char* format, ...) {
   if (!is_gen_print_enabled)
     return;
   va_list args;
@@ -76,7 +85,7 @@ static size_t size_align8(size_t input) {
     return input;
   return input + (8 - input % 8);
 }
-static clock_t print_time_taken(clock_t t, const char *msg) {
+__fq1 __fq2 static clock_t print_time_taken(clock_t t, const char *msg) {
   t = clock() - t;
   double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
   gen_printf("%s%.5f\n", msg, time_taken);
