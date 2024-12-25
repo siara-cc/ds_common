@@ -213,6 +213,16 @@ static void write_uint32(uint32_t input, FILE *fp) {
   fputc((input >> 16) & 0xFF, fp);
   fputc(input >> 24, fp);
 }
+static void write_uint64(uint64_t input, FILE *fp) {
+  fputc(input & 0xFF, fp);
+  fputc((input >> 8) & 0xFF, fp);
+  fputc((input >> 16) & 0xFF, fp);
+  fputc((input >> 24) & 0xFF, fp);
+  fputc((input >> 32) & 0xFF, fp);
+  fputc((input >> 40) & 0xFF, fp);
+  fputc((input >> 48) & 0xFF, fp);
+  fputc(input >> 56, fp);
+}
 static void append_uint16(uint16_t u16, byte_vec& v) {
   v.push_back(u16 & 0xFF);
   v.push_back(u16 >> 8);
