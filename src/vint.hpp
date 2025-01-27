@@ -152,17 +152,21 @@ static int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     }
     return static_cast<int64_t>(result - 0x8000000000000000ULL);
 }
+static inline size_t first_bit_set(int64_t num) {
+  return num == 0 ? 0 : 63 - __builtin_clzll(num);
+}
+const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9};
     static size_t get_svint60_len(int64_t vint) {
+      // return ((first_bit_set(std::abs(vint)) + 4) / 8) + 1;
+      //return int64_len_map[first_bit_set(std::abs(vint))];
       vint = std::abs(vint);
       return vint < (1 << 4) ? 1 : (vint < (1 << 12) ? 2 : (vint < (1 << 20) ? 3 :
               (vint < (1 << 28) ? 4 : (vint < (1LL << 36) ? 5 : (vint < (1LL << 44) ? 6 :
               (vint < (1LL << 52) ? 7 : 8))))));
     }
     static size_t get_svint60_ceil(size_t vlen) {
-      size_t bits = 4;
-      while (--vlen) {
-        bits += 8;
-      }
+      vlen--;
+      size_t bits = 4 + vlen * 8;
       return (1LL << bits) - 1;
     }
     static size_t read_svint60_len(uint8_t *ptr) {
