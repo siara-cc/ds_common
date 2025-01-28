@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "../src/bv.hpp"
 #include "../src/vint.hpp"
 
 #include <vector>
@@ -19,6 +20,10 @@ struct timespec print_time_taken(struct timespec t, const char *msg) {
   printf("%s %lf\n", msg, time_taken);
   clock_gettime(CLOCK_REALTIME, &t);
   return t;
+}
+
+inline size_t first_bit_pos64(uint64_t num) {
+  return num == 0 ? 1 : 64 - __builtin_clzll(num);
 }
 
 void makeSortable(int64_t value, uint8_t *buffer) {
@@ -51,10 +56,18 @@ int main(int argc, char *argv[]) {
   char buffer[50];
   size_t line_count = 0;
   std::vector<int64_t> mydata;
+  uint64_t orred = 0;
+  uint64_t u64;
   while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-    mydata.push_back(atoll(buffer));
+    int64_t i64 = atoll(buffer);
+    mydata.push_back(i64);
+    u64 = i64 < 0 ? -i64 : i64;
+    u64 = (u64 << 1) + (i64 < 0 ? 1 : 0);
+    //printf("%llu\n", u64);
+    orred |= u64;
     line_count++;
   }
+  int bit_len = orred == 0 ? 1 : 64 - __builtin_clzll(orred);
   fclose(fp);
   printf("Line count: %lu\n", line_count);
 
@@ -74,7 +87,7 @@ int main(int argc, char *argv[]) {
     svbuf_len += vlen;
   }
   printf("\nSortable svint encode ips: %lf, size: %lu\n", line_count / time_taken_in_secs(t) / 1000, svbuf_len);
-  t = print_time_taken(t, "Time taken for svint encode: ");
+  t = print_time_taken(t, "Time taken: ");
 
   std::vector<uint8_t> vint_buf(line_count * 8);
 
@@ -84,18 +97,26 @@ int main(int argc, char *argv[]) {
   for (size_t i = 0; i < line_count; i++) {
     i64 = mydata.at(i);
     size_t vlen = 0;
-    uint64_t u64 = (uint64_t) i64;
+    u64 = i64 < 0 ? -i64 : i64;
+    u64 <<= 1;
+    if (i64 < 0)
+      u64 |= 1ULL;
+    size_t bl = first_bit_pos64(u64) / 8;
+    *vbuf_out++ = bl;
+    *((uint64_t *) vbuf_out) = u64;
+    vbuf_out += bl;
     vbuf_out++;
-    do {
-      vlen++;
-      *vbuf_out++ = u64 & 0xFF;
-      u64 >>= 8;
-    } while (u64 > 0);
-    *(vbuf_out - vlen - 1) = vlen;
+    // vbuf_out++;
+    // do {
+    //   vlen++;
+    //   *vbuf_out++ = u64 & 0xFF;
+    //   u64 >>= 8;
+    // } while (u64 > 0);
+    // *(vbuf_out - vlen - 1) = vlen - 1;
   }
   vbuf_len = vbuf_out - vint_buf.data();
   printf("\nvint encode ips: %lf, size: %lu\n", line_count / time_taken_in_secs(t) / 1000, vbuf_len);
-  t = print_time_taken(t, "Time taken for svint encode: ");
+  t = print_time_taken(t, "Time taken: ");
 
   size_t sbuf_len = line_count * 8;
   std::vector<uint8_t> sint_buf(sbuf_len);
@@ -108,7 +129,19 @@ int main(int argc, char *argv[]) {
     sint_src += 8;
   }
   printf("\nSortable int encode ips: %lf, size: %lu\n", line_count / time_taken_in_secs(t) / 1000, sbuf_len);
-  t = print_time_taken(t, "Time taken for vint encode: ");
+  t = print_time_taken(t, "Time taken: ");
+
+  std::vector<uint8_t> bv_buf;
+  gen::int_bit_vector ibv(&bv_buf, bit_len, line_count);
+
+  for (size_t i = 0; i < line_count; i++) {
+    i64 = mydata.at(i);
+    u64 = i64 < 0 ? -i64 : i64;
+    u64 = (u64 << 1) | (i64 < 0 ? 1 : 0);
+    ibv.append(u64);
+  }
+  printf("\nbvint encode bit_len: %d, ips: %lf, size: %lu\n", bit_len, line_count / time_taken_in_secs(t) / 1000, ibv.size());
+  t = print_time_taken(t, "Time taken: ");
 
   clock_gettime(CLOCK_REALTIME, &t);
   size_t err_count = 0;
@@ -121,8 +154,8 @@ int main(int argc, char *argv[]) {
       err_count++;
     svint_src += vlen;
   }
-  printf("\nSortable int decode ips: %lf, error count: %lu\n", line_count / time_taken_in_secs(t) / 1000, err_count);
-  t = print_time_taken(t, "Time taken for vint encode: ");
+  printf("\nSortable var int decode ips: %lf, error count: %lu\n", line_count / time_taken_in_secs(t) / 1000, err_count);
+  t = print_time_taken(t, "Time taken: ");
 
   clock_gettime(CLOCK_REALTIME, &t);
   err_count = 0;
@@ -130,14 +163,21 @@ int main(int argc, char *argv[]) {
   for (size_t i = 0; i < line_count; i++) {
     i64 = mydata.at(i);
     size_t vlen = *vint_src++;
-    i64_1 = *((int64_t *) vint_src);
-    i64_1 &= mask64[vlen - 1];
+    u64 = *((uint64_t *) vint_src);
+    vint_src += vlen;
+    vint_src++;
+    // vlen++;
+    // vlen <<= 3;
+    // u64 &= ((1 << vlen) - 1);
+    u64 &= mask64[vlen];
+    i64_1 = u64 >> 1;
+    if (u64 & 1ULL)
+      i64_1 = -i64_1;
     if (i64 != i64_1)
       err_count++;
-    vint_src += vlen;
   }
   printf("\nVInt decode ips: %lf, error count: %lu\n", line_count / time_taken_in_secs(t) / 1000, err_count);
-  t = print_time_taken(t, "Time taken for vint decode: ");
+  t = print_time_taken(t, "Time taken: ");
 
   clock_gettime(CLOCK_REALTIME, &t);
   err_count = 0;
@@ -150,7 +190,26 @@ int main(int argc, char *argv[]) {
     sint_src += 8;
   }
   printf("\nSInt decode ips: %lf, error count: %lu\n", line_count / time_taken_in_secs(t) / 1000, err_count);
-  t = print_time_taken(t, "Time taken for sint decode: ");
+  t = print_time_taken(t, "Time taken: ");
+
+  gen::int_bv_reader ibr;
+  ibr.init(bv_buf.data(), bit_len);
+
+  clock_gettime(CLOCK_REALTIME, &t);
+  err_count = 0;
+  for (size_t i = 0; i < line_count; i++) {
+    i64 = mydata.at(i);
+    u64 = ibr[i];
+    i64_1 = u64 >> 1;
+    if (u64 & 1ULL)
+      i64_1 = -i64_1;
+    if (i64 != i64_1) {
+      err_count++;
+      //printf("%lu: %lld, %lld\n", i, i64, i64_1);
+    }
+  }
+  printf("\nbvint decode ips: %lf, error count: %lu\n", line_count / time_taken_in_secs(t) / 1000, err_count);
+  t = print_time_taken(t, "Time taken: ");
 
   return 1;
 

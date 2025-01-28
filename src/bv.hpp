@@ -79,8 +79,9 @@ class int_bit_vector {
     byte_vec *int_ptrs;
     size_t bit_len;
     size_t count;
+    size_t sz;
     size_t last_idx;
-    uint8_t last_byte_bits;
+    uint8_t last_bits;
     static void append_uint32(uint32_t u32, byte_vec& v) {
       v.push_back(u32 & 0xFF);
       v.push_back((u32 >> 8) & 0xFF);
@@ -108,28 +109,34 @@ class int_bit_vector {
       bit_len = _bit_len;
       count = _count;
       int_ptrs->clear();
-      int_ptrs->reserve(bit_len * count / 8 + 8);
+      sz = bit_len * count / 8 + 8;
+      int_ptrs->reserve(sz);
       append_uint64(0, *int_ptrs);
-      last_byte_bits = 64;
+      last_bits = 64;
       last_idx = 0;
     }
     void append(uint32_t given_ptr) {
-      uint64_t ptr = given_ptr;
+      append(given_ptr);
+    }
+    void append(uint64_t ptr) {
       uint64_t *last_ptr = (uint64_t *) (int_ptrs->data() + int_ptrs->size() - 8);
       int bits_to_append = static_cast<int>(bit_len);
       while (bits_to_append > 0) {
-        if (bits_to_append < last_byte_bits) {
-          last_byte_bits -= bits_to_append;
-          *last_ptr |= (ptr << last_byte_bits);
+        if (bits_to_append < last_bits) {
+          last_bits -= bits_to_append;
+          *last_ptr |= (ptr << last_bits);
           bits_to_append = 0;
         } else {
-          bits_to_append -= last_byte_bits;
+          bits_to_append -= last_bits;
           *last_ptr |= (ptr >> bits_to_append);
-          last_byte_bits = 64;
+          last_bits = 64;
           append_uint64(0, *int_ptrs);
           last_ptr = (uint64_t *) (int_ptrs->data() + int_ptrs->size() - 8);
         }
       }
+    }
+    size_t size() {
+      return sz;
     }
 };
 
