@@ -116,7 +116,7 @@ class int_bit_vector {
       last_idx = 0;
     }
     void append(uint32_t given_ptr) {
-      append(given_ptr);
+      append((uint64_t) given_ptr);
     }
     void append(uint64_t ptr) {
       uint64_t *last_ptr = (uint64_t *) (int_ptrs->data() + int_ptrs->size() - 8);
