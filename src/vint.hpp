@@ -12,22 +12,46 @@ typedef std::vector<uint8_t> byte_vec;
 #define SVINT60_MIN -0xFFFFFFFFFFFFFFFLL
 #define SVINT60_MAX 0xFFFFFFFFFFFFFFFLL
 
-static size_t append_rvint32(byte_vec& vec, uint32_t u32) {
-  size_t len = 0;
-  while (u32 > 31) {
-    vec.push_back(u32 & 0xFF);
-    u32 >>= 8;
-    len++;
+static size_t copy_rvint32(uint8_t *out, uint32_t u32) {
+  size_t len = (u32 < 64 ? 0 : (u32 < 4096 ? 1 : (u32 < 1048576 ? 2 : 3)));
+  *out = len << 6;
+  switch (len) {
+    case 0:
+      *out |= u32;
+      return 1;
+    case 1:
+      out[1] = *out | (u32 & 0x3F);
+      *out |= (u32 >> 6);
+      return 2;
+    case 2:
+      out[2] = *out | (u32 & 0x3F);
+      out[1] = (u32 >> 6) & 0xFF;
+      *out |= (u32 >> 14);
+      return 3;
   }
-  vec.push_back((u32 << 3) | len);
-  return len + 1;
+  out[3] = *out | (u32 & 0x3F);
+  out[2] = (u32 >> 6) & 0xFF;
+  out[1] = (u32 >> 14) & 0xFF;
+  *out |= (u32 >> 22);
+  return 4;
 }
-static uint32_t read_rvint32(const uint8_t *ptr) {
-  uint32_t ret = *ptr >> 3;
-  size_t len = *ptr-- & 0x07;
-  while (len--) {
-    ret <<= 7;
-    ret += *ptr--;
+static uint32_t read_rvint32(const uint8_t *ptr, size_t& len) {
+  uint32_t ret = *ptr & 0x3F;
+  len = *ptr-- >> 6;
+  len++;
+  switch (len) {
+    case 2:
+      ret |= ((uint32_t) *ptr << 6);
+      break;
+    case 3:
+      ret |= ((uint32_t) *ptr-- << 14);
+      ret |= ((uint32_t) *ptr << 6);
+      break;
+    case 4:
+      ret |= ((uint32_t) *ptr-- << 22);
+      ret |= ((uint32_t) *ptr-- << 14);
+      ret |= ((uint32_t) *ptr << 6);
+      break;
   }
   return ret;
 }
@@ -169,7 +193,7 @@ const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
       size_t bits = 4 + vlen * 8;
       return (1LL << bits) - 1;
     }
-    static size_t read_svint60_len(uint8_t *ptr) {
+    static size_t read_svint60_len(const uint8_t *ptr) {
       if (*ptr == 0)
         return 1;
       size_t ret = ((*ptr >> 4) & 0x07);
@@ -197,7 +221,7 @@ const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
       while (vlen--)
         out.push_back((lng >> (vlen * 8)) & 0xFF);
     }
-    static int64_t read_svint60(uint8_t *ptr) {
+    static int64_t read_svint60(const uint8_t *ptr) {
       if (*ptr == 0)
         return -0;
       int64_t ret = *ptr & 0x0F;
@@ -218,7 +242,7 @@ const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
               (vint < (1 << 29) ? 4 : (vint < (1LL << 37) ? 5 : (vint < (1LL << 45) ? 6 :
               (vint < (1LL << 53) ? 7 : 8))))));
     }
-    static size_t read_svint61_len(uint8_t *ptr) {
+    static size_t read_svint61_len(const uint8_t *ptr) {
       return 1 + (*ptr >> 5);
     }
     static void copy_svint61(uint64_t input, uint8_t *out, size_t vlen) {
@@ -234,7 +258,7 @@ const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
       while (vlen--)
         out.push_back((input >> (vlen * 8)) & 0xFF);
     }
-    static uint64_t read_svint61(uint8_t *ptr) {
+    static uint64_t read_svint61(const uint8_t *ptr) {
       uint64_t ret = *ptr & 0x1F;
       size_t len = (*ptr >> 5);
       while (len--) {
