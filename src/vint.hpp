@@ -117,18 +117,15 @@ static size_t get_vlen_of_uint32(uint32_t vint) {
   return vint < (1 << 7) ? 1 : (vint < (1 << 14) ? 2 : (vint < (1 << 21) ? 3 :
           (vint < (1 << 28) ? 4 : 5)));
 }
-static size_t append_vint32(byte_vec& vec, uint32_t vint) {
-  size_t len = get_vlen_of_uint32(vint);
-  for (size_t i = len - 1; i > 0; i--)
-    vec.push_back(0x80 + ((vint >> (7 * i)) & 0x7F));
-  vec.push_back(vint & 0x7F);
-  return len;
-}
 static size_t append_vint32(byte_vec& vec, uint32_t vint, size_t len) {
   for (size_t i = len - 1; i > 0; i--)
     vec.push_back(0x80 + ((vint >> (7 * i)) & 0x7F));
   vec.push_back(vint & 0x7F);
   return len;
+}
+static size_t append_vint32(byte_vec& vec, uint32_t vint) {
+  size_t len = get_vlen_of_uint32(vint);
+  return append_vint32(vec, vint, len);
 }
 static size_t append_ovint(byte_vec& vec, size_t vint, size_t offset_bits, uint8_t or_mask) {
   size_t mask_bits = 8 - offset_bits;
