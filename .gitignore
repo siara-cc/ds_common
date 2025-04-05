@@ -6,5 +6,7 @@ test_ms
 test_mw
 *.bin*
 tests/test_vint*
+tests/test_svint*
 !tests/test_vint.cpp
 !tests/test_vint_per.cpp
+!tests/test_svint60.cpp

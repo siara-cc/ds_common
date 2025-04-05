@@ -104,13 +104,13 @@ static size_t copy_fvint32(uint8_t *ptr, uint32_t u32) {
   return len;
 }
 static size_t read_fvint(const uint8_t *ptr, size_t& len) {
-  size_t ret = *ptr & 0x7F;
-  len = 1;
-  while (*ptr++ & 0x80) {
+  len = 0;
+  size_t ret = 0;
+  do {
     size_t bval = *ptr & 0x7F;
     ret += (bval << (7 * len));
     len++;
-  }
+  } while (*ptr++ & 0x80);
   return ret;
 }
 static size_t get_vlen_of_uint32(uint32_t vint) {
