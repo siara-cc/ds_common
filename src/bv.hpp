@@ -58,7 +58,7 @@ class bit_vector {
       size_t bit_width = (sizeof(T) * 8);
       size_t pos = bit_no / bit_width;
       T mask = 1ULL << (bit_no % bit_width);
-      return (bv[pos] & mask) > 0;
+      return (bv[pos] & mask) != 0;
     }
     size_t get_highest() {
       return highest_bit_no;
@@ -71,6 +71,28 @@ class bit_vector {
     }
     void reset() {
       bv.clear();
+      highest_bit_no = 0;
+    }
+};
+
+template <class T>
+class bv_reader {
+  private:
+    T *bv;
+    size_t bv_size;
+    // todo: implement size check
+  public:
+    __fq1 __fq2 bool operator[](size_t bit_no) {
+      size_t bit_width = (sizeof(T) * 8);
+      size_t pos = bit_no / bit_width;
+      if (pos >= bv_size)
+        return false;
+      T mask = 1ULL << (bit_no % bit_width);
+      return (bv[pos] & mask) != 0;
+    }
+    __fq1 __fq2 void set_bv(T *_bv, size_t _bv_size) {
+      bv = _bv;
+      bv_size = _bv_size;
     }
 };
 
