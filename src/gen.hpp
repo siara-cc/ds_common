@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <cstring>
 #include <vector>
+#include <cmath>
 
 namespace gen {
 
@@ -49,6 +50,9 @@ static int count_decimal_digits(double d) {
       break;
   }
   return counter;
+}
+bool is_negative_zero(double x) {
+  return x == 0.0 && std::signbit(x);
 }
 static double pow10(int p) {
   return dbl_div[p];
