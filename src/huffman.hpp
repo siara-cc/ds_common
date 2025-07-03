@@ -3,9 +3,13 @@
 
 namespace gen {
 
+#ifndef uintxx_t
+#define uintxx_t uint32_t
+#endif
+
 template<class T>
 class huffman {
-  std::vector<uint32_t> _freqs;
+  std::vector<uintxx_t> _freqs;
   struct entry {
     T freq;
     entry *parent;
@@ -48,7 +52,7 @@ class huffman {
     }
   }
   public:
-    huffman(std::vector<uint32_t> freqs) {
+    huffman(std::vector<uintxx_t> freqs) {
       _freqs = freqs;
       process_input();
     }
@@ -56,8 +60,8 @@ class huffman {
       for (size_t i = 0; i < _all_entries.size(); i++)
         delete _all_entries[i];
     }
-    uint32_t get_code(int i, uint32_t& len) {
-      uint32_t ret = 0;
+    uintxx_t get_code(int i, uintxx_t& len) {
+      uintxx_t ret = 0;
       len = 0;
       entry *start = _all_entries[i];
       do {
