@@ -3,8 +3,16 @@
 
 namespace gen {
 
-#ifndef uintxx_t
+#ifndef UINTXX_WIDTH
+#define UINTXX_WIDTH 64
+#endif
+
+#if UINTXX_WIDTH == 32
 #define uintxx_t uint32_t
+#define PRIuXX PRIu32
+#else
+#define uintxx_t uint64_t
+#define PRIuXX PRIu64
 #endif
 
 template<class T>
