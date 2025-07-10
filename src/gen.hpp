@@ -54,6 +54,15 @@ static int count_decimal_digits(double d) {
 bool is_negative_zero(double x) {
   return x == 0.0 && std::signbit(x);
 }
+size_t bits_needed(size_t num) {
+  if (num == 0)
+    return 1;
+  return ceil(log2(num + 1));
+}
+size_t bytes_needed(size_t num) {
+  size_t bits = bits_needed(num);
+  return (bits + 7) / 8;
+}
 static double pow10(int p) {
   return dbl_div[p];
 }
@@ -185,6 +194,16 @@ __fq1 __fq2 static void copy_uint32(uint32_t input, uint8_t *out) {
   *out++ = (input >> 16) & 0xFF;
   *out = (input >> 24);
 }
+__fq1 __fq2 static void copy_uint64(uint64_t input, uint8_t *out) {
+  *out++ = input & 0xFF;
+  *out++ = (input >> 8) & 0xFF;
+  *out++ = (input >> 16) & 0xFF;
+  *out++ = (input >> 24) & 0xFF;
+  *out++ = (input >> 32) & 0xFF;
+  *out++ = (input >> 40) & 0xFF;
+  *out++ = (input >> 48) & 0xFF;
+  *out = (input >> 56);
+}
 static void copy_vint32(uint32_t input, uint8_t *out, size_t vlen) {
   for (int i = vlen - 1; i > 0; i--)
     *out++ = 0x80 + ((input >> (7 * i)) & 0x7F);
@@ -282,6 +301,10 @@ static uint32_t read_uint24(const uint8_t *ptr) {
 }
 static uint32_t read_uint32(uint8_t *ptr) {
   return *((uint32_t *) ptr);
+}
+static uint64_t read_uint40(uint8_t *ptr) {
+  uint64_t ret = *((uint32_t *) ptr);
+  return ret | ((uint64_t) ptr[4] << 32);
 }
 static uint64_t read_uint64(uint8_t *t) {
   return *((uint64_t *) t);
