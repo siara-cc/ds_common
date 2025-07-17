@@ -54,6 +54,59 @@ static int count_decimal_digits(double d) {
 bool is_negative_zero(double x) {
   return x == 0.0 && std::signbit(x);
 }
+const static char *dt_formats[] = {"%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y %I:%M %p", "%d/%m/%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"};
+const static size_t dt_format_lens[] = {10, 10, 10, 19, 19, 19, 19, 19, 19};
+
+#define SECONDS_PER_DAY 86400
+
+static int64_t days_from_civil(int y, int m, int d) {
+    y -= m <= 2;
+    const int era = (y >= 0 ? y : y - 399) / 400;
+    const int yoe = y - era * 400;                       // [0, 399]
+    const int doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // [0, 365]
+    const int doe = yoe * 365 + yoe / 4 - yoe / 100 + yoe / 400 + doy;
+    return era * 146097 + doe - 719468;
+}
+
+static int64_t tm_to_epoch_seconds(const struct tm *tm) {
+    int64_t days = days_from_civil(tm->tm_year + 1900,
+                                    tm->tm_mon + 1,
+                                    tm->tm_mday);
+    return days * SECONDS_PER_DAY +
+           tm->tm_hour * 3600 +
+           tm->tm_min * 60 +
+           tm->tm_sec;
+}
+static void civil_from_days(int64_t z, int *y, int *m, int *d) {
+    z += 719468;
+    const int era = (z >= 0 ? z : z - 146096) / 146097;
+    const int doe = z - era * 146097;                    // [0, 146096]
+    const int yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    const int y1 = yoe + era * 400;
+    const int doy = doe - (365 * yoe + yoe / 4 - yoe / 100 + yoe / 400);
+    const int mp = (5 * doy + 2) / 153;
+    *d = doy - (153 * mp + 2) / 5 + 1;
+    *m = mp + (mp < 10 ? 3 : -9);
+    *y = y1 + (*m <= 2 ? 1 : 0);
+}
+static void epoch_seconds_to_tm(int64_t seconds, struct tm *out_tm) {
+    memset(out_tm, 0, sizeof(*out_tm));
+    int64_t days = seconds / SECONDS_PER_DAY;
+    int64_t rem = seconds % SECONDS_PER_DAY;
+    if (rem < 0) {
+        rem += SECONDS_PER_DAY;
+        days -= 1;
+    }
+    int y, m, d;
+    civil_from_days(days, &y, &m, &d);
+    out_tm->tm_year = y - 1900;
+    out_tm->tm_mon  = m - 1;
+    out_tm->tm_mday = d;
+    out_tm->tm_hour = rem / 3600;
+    rem %= 3600;
+    out_tm->tm_min  = rem / 60;
+    out_tm->tm_sec  = rem % 60;
+}
 size_t bits_needed(size_t num) {
   if (num == 0)
     return 1;

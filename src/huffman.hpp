@@ -4,7 +4,7 @@
 namespace gen {
 
 #ifndef UINTXX_WIDTH
-#define UINTXX_WIDTH 64
+#define UINTXX_WIDTH 32
 #endif
 
 #if UINTXX_WIDTH == 32
