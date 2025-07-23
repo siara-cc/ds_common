@@ -173,15 +173,8 @@ static int64_t uint8ToInt64Sortable(const uint8_t input[8]) {
     }
     return static_cast<int64_t>(result - 0x8000000000000000ULL);
 }
-static inline size_t first_bit_set(uint64_t num) {
-#ifdef _MSC_VER
-    unsigned long index;
-    if (num == 0 || !_BitScanReverse64(&index, num))
-        return 0;
-    return index;
-#else
-    return num == 0 ? 0 : 63 - __builtin_clzll(num);
-#endif
+static inline size_t first_bit_set(int64_t num) {
+  return num == 0 ? 0 : 63 - __builtin_clzll(num);
 }
 const static uint64_t int64_len_map[] = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9};
     static size_t get_svint60_len(int64_t vint) {
