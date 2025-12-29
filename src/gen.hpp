@@ -334,37 +334,100 @@ static uint32_t read_uint16(byte_vec& v, size_t pos) {
   return ret;
 }
 static uint32_t read_uint16(const uint8_t *ptr) {
-  return *((uint16_t *) ptr); // faster endian dependent
-  // uint32_t ret = *ptr++;
-  // ret |= (*ptr << 8);
-  // return ret;
+#ifndef __CUDA_ARCH__
+  uint16_t tmp;
+  memcpy(&tmp, ptr, sizeof(tmp));
+  return tmp; // faster endian dependent
+#else
+  uint32_t ret = *ptr++;
+  ret |= (*ptr << 8);
+  return ret;
+#endif
 }
+
 static uint32_t read_uint24(byte_vec& v, size_t pos) {
   uint32_t ret = v[pos++];
-  ret |= (v[pos++] << 8);
-  ret |= (v[pos] << 16);
+  ret |= (uint32_t(v[pos++]) << 8);
+  ret |= (uint32_t(v[pos]) << 16);
   return ret;
 }
+
 static uint32_t read_uint24(const uint8_t *ptr) {
-  return *((uint32_t *) ptr) & 0x00FFFFFF; // faster endian dependent
-  // uint32_t ret = *ptr++;
-  // ret |= (*ptr++ << 8);
-  // ret |= (*ptr << 16);
-  // return ret;
+#ifndef __CUDA_ARCH__
+  uint32_t tmp = 0;
+  memcpy(&tmp, ptr, 3);
+  return tmp & 0x00FFFFFF; // faster endian dependent
+#else
+  uint32_t ret = *ptr++;
+  ret |= (*ptr++ << 8);
+  ret |= (*ptr << 16);
+  return ret;
+#endif
 }
+
 static uint32_t read_uint32(uint8_t *ptr) {
-  return *((uint32_t *) ptr);
+#ifndef __CUDA_ARCH__
+  uint32_t tmp;
+  memcpy(&tmp, ptr, sizeof(tmp));
+  return tmp;
+#else
+  uint32_t ret = *ptr++;
+  ret |= (*ptr++ << 8);
+  ret |= (*ptr++ << 16);
+  ret |= (*ptr << 24);
+  return ret;
+#endif
 }
+
 static uint64_t read_uint40(uint8_t *ptr) {
-  uint64_t ret = *((uint32_t *) ptr);
+#ifndef __CUDA_ARCH__
+  uint32_t lo;
+  memcpy(&lo, ptr, sizeof(lo));
+  uint64_t ret = lo;
   return ret | ((uint64_t) ptr[4] << 32);
+#else
+  uint64_t ret = *ptr++;
+  ret |= ((uint64_t)*ptr++ << 8);
+  ret |= ((uint64_t)*ptr++ << 16);
+  ret |= ((uint64_t)*ptr++ << 24);
+  ret |= ((uint64_t)*ptr << 32);
+  return ret;
+#endif
 }
+
 static uint64_t read_uint64(uint8_t *t) {
-  return *((uint64_t *) t);
+#ifndef __CUDA_ARCH__
+  uint64_t tmp;
+  memcpy(&tmp, t, sizeof(tmp));
+  return tmp;
+#else
+  uint64_t ret = *t++;
+  ret |= ((uint64_t)*t++ << 8);
+  ret |= ((uint64_t)*t++ << 16);
+  ret |= ((uint64_t)*t++ << 24);
+  ret |= ((uint64_t)*t++ << 32);
+  ret |= ((uint64_t)*t++ << 40);
+  ret |= ((uint64_t)*t++ << 48);
+  ret |= ((uint64_t)*t << 56);
+  return ret;
+#endif
 }
+
 static uint8_t *read_uint64(uint8_t *t, uint64_t& u64) {
-  u64 = *((uint64_t *) t); // faster endian dependent
+#ifndef __CUDA_ARCH__
+  memcpy(&u64, t, sizeof(u64)); // faster endian dependent
   return t + 8;
+#else
+  u64 = *t++;
+  u64 |= ((uint64_t)*t++ << 8);
+  u64 |= ((uint64_t)*t++ << 16);
+  u64 |= ((uint64_t)*t++ << 24);
+  u64 |= ((uint64_t)*t++ << 32);
+  u64 |= ((uint64_t)*t++ << 40);
+  u64 |= ((uint64_t)*t++ << 48);
+  u64 |= ((uint64_t)*t << 56);
+  return t;
+#endif
   // u64 = 0;
   // for (int v = 0; v < 8; v++) {
   //   u64 <<= 8;
@@ -372,9 +435,19 @@ static uint8_t *read_uint64(uint8_t *t, uint64_t& u64) {
   // }
   // return t;
 }
+
 static uint32_t read_uintx(const uint8_t *ptr, uint32_t mask) {
-  uint32_t ret = *((uint32_t *) ptr);
-  return ret & mask; // faster endian dependent
+#ifndef __CUDA_ARCH__
+  uint32_t tmp;
+  memcpy(&tmp, ptr, sizeof(tmp));
+  return tmp & mask; // faster endian dependent
+#else
+  uint32_t ret = *ptr++;
+  ret |= (*ptr++ << 8);
+  ret |= (*ptr++ << 16);
+  ret |= (*ptr << 24);
+  return ret & mask;
+#endif
 }
 static uint8_t *extract_line(uint8_t *last_line, size_t& last_line_len, size_t remaining) {
   if (remaining == 0)

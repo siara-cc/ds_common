@@ -174,6 +174,7 @@ class int_bv_reader {
       bit_len = _bit_len;
     }
     __fq1 __fq2 uint32_t operator[](size_t pos) {
+      if (bit_len == 0) return 0; // todo: why?
       uint64_t bit_pos = pos * bit_len;
       uint64_t *ptr_loc = (uint64_t *) int_bv + bit_pos / 64;
       size_t bits_occu = (bit_pos % 64);
