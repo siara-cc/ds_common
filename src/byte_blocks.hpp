@@ -93,10 +93,10 @@ class byte_blocks {
       count++;
       return pos;
     }
-    size_t push_back_with_vlen(const void *val, size_t val_len) {
+    size_t push_back_with_vlen(const void *val, size_t val_len, size_t extra = 0) {
       size_t pos;
       int8_t vlen = gen::get_vlen_of_uint32(val_len);
-      uint8_t *buf = reserve(val_len + vlen, pos);
+      uint8_t *buf = reserve(val_len + vlen + extra, pos);
       gen::copy_vint32(val_len, buf, vlen);
       memcpy(buf + vlen, val, val_len);
       count++;
