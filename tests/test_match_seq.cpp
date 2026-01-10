@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <iostream>
 
-#include "../src/match_seq.hpp"
+#include "match_seq.hpp"
 
 using namespace gen;
 using namespace std;

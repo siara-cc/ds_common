@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "../src/bv.hpp"
-#include "../src/vint.hpp"
+#include "bv.hpp"
+#include "vint.hpp"
 
 #include <vector>
 #include <cstdint>

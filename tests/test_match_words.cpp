@@ -4,11 +4,9 @@
 #include <fcntl.h>
 #include <iostream>
 
-#include "../src/gen.hpp"
-#include "../src/freq_grp.hpp"
-#include "../src/match_words.hpp"
-
-#include "../../madras-trie/src/madras_builder_dv1.hpp"
+#include "gen.hpp"
+#include "freq_grp.hpp"
+#include "match_words.hpp"
 
 using namespace gen;
 
