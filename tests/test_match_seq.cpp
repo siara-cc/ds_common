@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <iostream>
 
+#include "vint.hpp"
 #include "match_seq.hpp"
 
 using namespace gen;
@@ -153,7 +154,7 @@ void test_decode_file(const char *filename) {
       t++;
     } else {
       int offset = 1;
-      int8_t vlen;
+      size_t vlen;
       int rel_pos = gen::read_vint32(t, &vlen);
       t += vlen;
       offset += vlen;
@@ -296,7 +297,7 @@ void test_decode_file1(const char *filename) {
       d_buf[d_len++] = '\0';
       t++;
     } else {
-      int8_t vlen;
+      size_t vlen;
       int rel_pos = gen::read_vint32(t, &vlen);
       t += vlen;
       int len = gen::read_vint32(t, &vlen);
